@@ -34,6 +34,17 @@ Components are html elements.
 """
 abstract type AbstractComponent <: Servable end
 
+function in(name::String, v::Vector{<:AbstractComponent})
+
+end
+
+function getindex()
+
+end
+
+function deleteat!(name::String, v::Vector{<:AbstractComponent})
+
+end
 
 """
 ### Component{tag} <: AbstractComponent <: Servable
@@ -85,10 +96,43 @@ mutable struct Component{tag} <: AbstractComponent
         end
         new{T}(name, properties, tag)
     end
-    Component(tag::String, name::String, properties::Pair{String, <:Any} ...; args::Any ...) = begin
-        properties = Dict{Symbol, Any}(vcat([Symbol() => string() for prop in properties], [Symbol(prop[1]) => string(prop[2]) for prop in args]))
+    Component(tag::String, name::String, children::AbstractComponent ..., properties::Pair{String, <:Any} ...; args::Any ...) = begin
+        properties = Dict{Symbol, Any}(vcat([Symbol(prop[1]) => string(prop[2]) for prop in properties], [Symbol(prop[1]) => string(prop[2]) for prop in args]))
+        push!(properties, :children => Vector{AbstractComponent}([children ...]), )
+    end
+    Component(html::String) = begin
+
     end
 end
+
+getindex(s::AbstractComponent, symb::Symbol) = s.properties[symb]
+getindex(s::AbstractComponent, symb::String) = s.properties[Symbol(symb)]
+
+setindex!(s::AbstractComponent, a::Any, symb::Symbol) = s.properties[symb] = a
+setindex!(s::AbstractComponent, a::Any, symb::String) = s.properties[Symbol(symb)] = a
+
+"""
+**Interface**
+### copy(c::AbstractComponent) -> ::AbstractComponent
+------------------
+copies c.
+#### example
+```
+c = p("myp")
+t = copy!(c)
+```
+"""
+function copy(c::Component{<:Any})
+    props = copy(c.properties)
+    extras = copy(c.extras)
+    tag = copy(c.tag)
+    name = copy(c.name)
+    comp = Component(name, tag, props)
+    comp.extras = extras
+    comp
+end
+
+push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
 
 string(comp::Component{<:Any}) = begin
     propstring()
@@ -135,5 +179,192 @@ positonal argument of type ::Connection or ::AbstractConnection
 ```
 """
 abstract type StyleComponent <: AbstractComponent end
+
+"""
+### Animation
+- name::String
+- properties::Dict
+- f::Function
+- delay::Float64
+- length::Float64
+- iterations::Integer
+An animation can be used to animate Styles with the animate! method. Animating
+is done by indexing by either percentage, or symbols, such as from and to.
+##### example
+```
+anim = Animation("myanim")
+anim[:from] = "opacity" => "0%"
+anim[:to] = "opacity" => "100%"
+style = Style("example")
+animate!(style, anim)
+```
+------------------
+##### field info
+- name::String - The name of the animation.
+- properties::Dict - The properties that have been pushed so far.
+- f::Function - The function called when writing to a Connection.
+- delay::Float64 - The delay before the animation begins.
+- length::Float64 - The amount of time the animation should play.
+- iterations::Integer - The number of times the animation should repeat. When
+set to 0 the animation will loop indefinitely.
+------------------
+##### constructors
+Animation(name::String = "animation", delay::Float64 = 0.0,
+        length::Float64 = 5.2, iterations::Integer = 1)
+    """
+mutable struct Animation <: StyleComponent
+    name::String
+    properties::Dict
+    extras::Vector{Servable}
+    f::Function
+    delay::Float64
+    length::Float64
+    iterations::Integer
+    function Animation(name::String = "animation"; delay::Float64 = 0.0,
+        length::Float64 = 5.2, iterations::Integer = 1)
+        f(c::AbstractConnection) = begin
+            s::String = "<style id=$name> @keyframes $name {"
+            [begin
+                vals = properties[anim]
+                s = s * "$anim {" * vals * "}"
+            end for anim in keys(properties)]
+            write!(c, string(s * "}</style>"))
+        end
+        f() = begin
+            s::String = "<style> @keyframes $name {"
+            for anim in keys(properties)
+                vals = properties[anim]
+                s = s * "$anim {" * vals * "}"
+            end
+            string(s * "}</style>")::String
+        end
+        properties::Dict = Dict()
+        new(name, properties, Vector{Servable}(), f, delay, length, iterations)::Animation
+    end
+end
+
+"""
+### Style
+- name::String
+- f::Function
+- properties::Dict{Any, Any}
+- extras::Vector{Servable}
+Creates a style from attributes, can style a Component using the style! method.
+Names should be consistent with CSS names. For example, a default h1 style would
+be named "h1". A heading style for a specific class should be "h1.myheading"
+##### example
+```
+style = Style("p.mystyle", color = "blue")
+style["opacity"] = "50%"
+comp = Component()
+style!(comp, style)
+```
+------------------
+##### field info
+- name::String - The name of the style. Should be consistent with CSS naming.
+- f::Function - The function f, called by write! when writing to a Connection.
+- properties::Dict{Any, Any} - A dict of style attributes.
+- extras::String - Extra components to be written along with the style. Usually
+this is an animation.
+------------------
+##### constructors
+- Style(name::String; props ...)
+"""
+mutable struct Style <: StyleComponent
+    name::String
+    properties::Dict{Any, Any}
+    extras::Vector{Servable}
+    function Style(name::String, properties::Dict{Any, Any}, extras::Vector{Servable})
+        new(name, properties, extras)::Style
+    end
+    function Style(name::String, a::Pair ...; args ...)
+        props::Vector{Pair{Any, Any}} = Base.vect(args ..., a ...)
+        properties::Dict{Any, Any} = Dict{Any, Any}(props)
+        extras::Vector{Servable} = Vector{Servable}()
+        Style(name, properties, extras)::Style
+    end
+end
+
+write!(c::AbstractConnection, comp::Style) = begin
+    properties = comp.properties
+    name = comp.name
+    extras = comp.extras
+    css::String = "<style id=$name>$name { "
+    [begin
+        property::String = string(rule)
+        value::String = string(properties[rule])
+        css = css * "$property: $value; "
+    end for rule in keys(properties)]
+    css = css * "}</style>"
+    write!(c, css)
+    write!(c, extras)
+end
+
+function style!(styles::Style ..., comps::Component{<:Any} ..., s::Pair{String, <:Any} ...)
+    if "style" in keys(c.properties)
+        c["style"] = c["style"][1:length(c["style"]) - 1]
+    else
+        c["style"] = "'"
+    end
+    for style in s
+        k, v = style[1], style[2]
+        c["style"] = c["style"] * "$k:$v;"
+    end
+    c["style"] = c["style"] * "'"
+end
+
+"""
+**Interface**
+### animate!(s::Style, a::Animation) -> _
+------------------
+Sets the Animation as a property of the style.
+#### example
+```
+anim = Animation("fade_in")
+anim[:from] = "opacity" => "0%"
+anim[:to] = "opacity" => "100%"
+
+animated_style = Style("example")
+animate!(animated_style, anim)
+```
+"""
+function animate!(s::Style, a::Animation)
+    s["animation-name"] = string(a.name)
+    s["animation-duration"] = string(a.length) * "s"
+    if a.iterations == 0
+        s["animation-iteration-count"] = "infinite"
+    else
+        s["animation-iteration-count"] = string(a.iterations)
+    end
+    push!(s.extras, a)
+end
+
+function animate!(s::Component{<:Any}, a::Animation)
+
+end
+
+
+function show(io::Base.TTY, c::AbstractComponent)
+    print("""$(c.name) ($(c.tag))\n
+    $(join([string(prop[1]) * " = " * string(prop[2]) * "\n" for prop in c.properties]))
+    $(showchildren(c))
+    """)
+end
+
+function show(io::Base.TTY, c::StyleComponent)
+    println("$(c.name) $(typeof(c))\n")
+end
+
+function show(io::IO, f::File)
+    println("File: $(f.dir)")
+end
+
+display(io::IO, m::MIME"text/html", s::Servable) = show(io, m, s)
+
+show(io::IO, m::MIME"text/html", s::Servable) = begin
+    sc = Toolips.SpoofConnection()
+    write!(sc, s)
+    show(io, sc.http.text)
+end
 
 end # module ToolipsServables
