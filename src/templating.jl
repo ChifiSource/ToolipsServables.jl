@@ -1,8 +1,14 @@
 mutable struct ComponentTemplate{T <: Any}
-    ComponentTemplate{T}(name::String, comps::AbstractComponent,
-    props::Pair{String, <:Any} ...; args ...) where {T <: Any} = begin
-        Component{T}(name, comps ..., props ...; args ...)
+    ComponentTemplate{T}() where {T <: Any} = new{T}()
+    ComponentTemplate{T}(name::String,
+    props::Any ...; args ...) where {T <: Any} = begin
+        Component(ComponentTemplate{T}(), name, props::Any ...; args ...)
     end
+end
+
+Component(comp::ComponentTemplate{<:Any}, name::String, props ...; args ...) = begin
+    T = typeof(comp).parameters[1]
+    Component{T}(name, props ...; args ...)
 end
 
 """
@@ -17,15 +23,22 @@ write!(c, DOCTYPE())
 """
 DOCTYPE() = "<!DOCTYPE html>"
 
-const templating = ComponentTemplate{info}
-const div = ComponentTemplate{:div}
+const templating = ComponentTemplate{:info}
+
+const style_properties = ComponentTemplate{:args}
+
+const arguments = ComponentTemplate{:args}
+
+div(name::String, args::Any ...; keyargs ...) = Component("div", name, args ...; keyargs)
+h(name::String, level::Int64, args::Any ...; keyargs ...) = Component("h$level", name, args ...; keyargs)
+h(level::Int64, name::String, args::Any ...; keyargs ...) = Component("h$level", name, args ...; keyargs)
+
 const img = ComponentTemplate{:img}
 const link = ComponentTemplate{:link}
 const meta = ComponentTemplate{:meta}
 const input = ComponentTemplate{:input}
 const a = ComponentTemplate{:a}
 const p = ComponentTemplate{:p}
-const h = ComponentTemplate{:h}
 const ul = ComponentTemplate{:ul}
 const li = ComponentTemplate{:li}
 const br = ComponentTemplate{:br}
@@ -34,7 +47,12 @@ const title = ComponentTemplate{:title}
 const span = ComponentTemplate{:span}
 const iframe = ComponentTemplate{:iframe}
 const svg = ComponentTemplate{:svg}
-
+const h1 = ComponentTemplate{:h1}
+const h2 = ComponentTemplate{:h2}
+const h3 = ComponentTemplate{:h3}
+const h5 = ComponentTemplate{:h5}
+const h4 = ComponentTemplate{:h4}
+const h6 = ComponentTemplate{:h6}
 const element = ComponentTemplate{:element}
 const label = ComponentTemplate{:label}
 const script = ComponentTemplate{:script}
@@ -54,17 +72,6 @@ const tr = ComponentTemplate{:tr}
 const th = ComponentTemplate{:th}
 const td = ComponentTemplate{:td}
 
-
-
-ComponentTemplate{:h}(name::String, level::Int64, comps::AbstractComponent,
-props::Pair{String, <:Any} ...; args ...) where {T <: Any} = begin
-    Component{T}(name, comps ..., props ...; args ...)
-end
-
-ComponentTemplate{:h}(level::Int64, name::String, comps::AbstractComponent,
-props::Pair{String, <:Any} ...; args ...) where {T <: Any} = begin
-    Component{T}(name, comps ..., props ...; args ...)
-end
 
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
     newstyle = Style("$(s.name):$name")

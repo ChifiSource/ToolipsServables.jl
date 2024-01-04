@@ -1,5 +1,5 @@
 module ToolipsServables
-import Base: write
+import Base: write, div, in, getindex, setindex!, delete!, push!, string, (:), show, display
 abstract type Servable end
 
 function write(io::IO, servables::Servable ...)
@@ -42,7 +42,7 @@ function getindex()
 
 end
 
-function deleteat!(name::String, v::Vector{<:AbstractComponent})
+function delete!(name::String, v::Vector{<:AbstractComponent})
 
 end
 
@@ -85,23 +85,23 @@ argument.
 - Component(name::String = "", tag::String = "", properties::Dict = Dict())
 - Component(name::String, tag::String, props::Base.Pairs)
 """
-mutable struct Component{tag} <: AbstractComponent
+mutable struct Component{T <: Any} <: AbstractComponent
     name::String
     properties::Dict{Symbol, Any}
     tag::String
-    function Component{T}(tag::String, name::String = "-", properties::Dict{Symbol, Any} = Dict{Symbol, Any}()) where {T <: Any}
-        propkeys = keys(properties)
-        if ~(:children in propkeys || :text in propkeys || :extras in propkeys)
-            push!(propkeys, :children => Vector{AbstractComponent}(), :extras => Vector{AbstractComponent}())
+    function Component{T}(name::String = "-", properties::Any ...; tag::String = string(T), args ...) where {T <: Any}
+        children = Vector{AbstractComponent}()
+        if length(properties) > 1
+            children = Vector{AbstractComponent}(filter(prop -> typeof(prop) <: AbstractComponent, properties))
+            properties = filter!(prop -> typeof(prop) <: AbstractComponent, properties)
         end
-        new{T}(name, properties, tag)
+        properties = Dict{Symbol, Any}(vcat([Symbol(prop[1]) => string(prop[2]) for prop in properties],
+        [Symbol(prop[1]) => string(prop[2]) for prop in args], :children => children, 
+        :extras => Vector{AbstractComponent}()) ...)
+        new{T}(name, properties, tag)::Component{T}
     end
-    Component(tag::String, name::String, children::AbstractComponent ..., properties::Pair{String, <:Any} ...; args::Any ...) = begin
-        properties = Dict{Symbol, Any}(vcat([Symbol(prop[1]) => string(prop[2]) for prop in properties], [Symbol(prop[1]) => string(prop[2]) for prop in args]))
-        push!(properties, :children => Vector{AbstractComponent}([children ...]), )
-    end
-    Component(html::String) = begin
-
+    function Component(tag::String, name::String, props::Any ...; args ...)
+        Component{Symbol(tag)}(name, props ...; args ...)
     end
 end
 
@@ -222,7 +222,7 @@ mutable struct Animation <: StyleComponent
     iterations::Integer
     function Animation(name::String = "animation"; delay::Float64 = 0.0,
         length::Float64 = 5.2, iterations::Integer = 1)
-        f(c::AbstractConnection) = begin
+       #== f(c::AbstractConnection) = begin
             s::String = "<style id=$name> @keyframes $name {"
             [begin
                 vals = properties[anim]
@@ -238,6 +238,7 @@ mutable struct Animation <: StyleComponent
             end
             string(s * "}</style>")::String
         end
+        ==#
         properties::Dict = Dict()
         new(name, properties, Vector{Servable}(), f, delay, length, iterations)::Animation
     end
@@ -285,7 +286,7 @@ mutable struct Style <: StyleComponent
     end
 end
 
-write!(c::AbstractConnection, comp::Style) = begin
+string(comp::Style) = begin
     properties = comp.properties
     name = comp.name
     extras = comp.extras
@@ -300,7 +301,7 @@ write!(c::AbstractConnection, comp::Style) = begin
     write!(c, extras)
 end
 
-function style!(styles::Style ..., comps::Component{<:Any} ..., s::Pair{String, <:Any} ...)
+function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
     if "style" in keys(c.properties)
         c["style"] = c["style"][1:length(c["style"]) - 1]
     else
@@ -311,6 +312,13 @@ function style!(styles::Style ..., comps::Component{<:Any} ..., s::Pair{String, 
         c["style"] = c["style"] * "$k:$v;"
     end
     c["style"] = c["style"] * "'"
+end
+
+function style!(args::Any ...)
+    styles = filter(v -> typeof(v) <: AbstractComponent, args)
+    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
+    [style!(comp, styles ...) for comp in comps]
+    nothing
 end
 
 """
@@ -367,4 +375,12 @@ show(io::IO, m::MIME"text/html", s::Servable) = begin
     show(io, sc.http.text)
 end
 
+include("templating.jl")
+
+export Servable, Component, AbstractComponent
+export animate!, style!
+export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
+export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6
+export element, label, script, nav, button, form, section, body, header, footer, b
+export source, audio, video, table, tr, th, td
 end # module ToolipsServables
