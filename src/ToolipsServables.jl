@@ -1,3 +1,15 @@
+"""
+#### toolips servables - composable and versatile parametric components
+- 0.3 January
+- Created in February, 2022 by [chifi](https://github.com/orgs/ChifiSource)
+- This software is MIT-licensed.
+
+`ToolipsServables` provides a composable parametric platform for templating 
+    UIs.
+```example
+
+```
+"""
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
 
@@ -35,11 +47,12 @@ end
 ```julia
 File{T <: Any} <: Servable
 ```
+- name**::String**
+- path**::String**
+
 The `File` `Servable` writes a file to a `Connection`. `T` will be the file extension 
 of the file, meaning a `.html` file becomes a `File{:html}`. Getting index on a file, `File[]`, 
 will yield the field path. Using `string` on a file will read the file as a `String`.
-- name**::String**
-- path**::String**
 ```julia
 - File(`dir`**::String**)
 ```
@@ -104,6 +117,10 @@ mutable struct Component{T <: Any} <: AbstractComponent
     name::String
     properties::Dict{Symbol, Any}
     tag::String
+
+    Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any} = begin
+        new{T}(name, properties, tag)
+    end
     function Component{T}(name::String = "-", properties::Any ...; tag::String = string(T), args ...) where {T <: Any}
         children = Vector{AbstractComponent}()
         if length(properties) > 1
@@ -217,15 +234,14 @@ string(comp::Style) = begin
     write!(c, extras)
 end
 
-abstract type FrameRenderer end
-abstract type Basic <: FrameRenderer end
+abstract type AbstractAnimation <: StyleComponent end
 
 """
 
 """
-mutable struct KeyFrameAnimation <: StyleComponent
+mutable struct KeyFrameAnimation <: AbstractAnimation
     name::String
-    properties::Dict{String, String}
+    properties::Dict{String, Vector{String}}
     delay::Float64
     length::Float64
     iterations::Float64
@@ -242,31 +258,19 @@ const to = "to"
 
 function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
     iterations::Number)
-    KeyFrameAnimation(name, [])
+    KeyFrameAnimation(name, Dict())
 end
 
-function string(anim::Animation)
-
+function string(anim::AbstractAnimation)
+    """@keyframes $(anim.dame)"""
 end
 
-end
 
        #== f(c::AbstractConnection) = begin
-            s::String = "<style id=$name> @keyframes $name {"
-            [begin
-                vals = properties[anim]
-                s = s * "$anim {" * vals * "}"
-            end for anim in keys(properties)]
-            write!(c, string(s * "}</style>"))
-        end
-        f() = begin
-            s::String = "<style> @keyframes $name {"
-            for anim in keys(properties)
-                vals = properties[anim]
-                s = s * "$anim {" * vals * "}"
-            end
-            string(s * "}</style>")::String
-        end
+@keyframes example {
+  from {background-color: red;}
+  to {background-color: yellow;}
+}
         ==#
 
 function show(io::Base.TTY, c::AbstractComponent)
@@ -287,12 +291,16 @@ end
 display(io::IO, m::MIME"text/html", s::Servable) = show(io, m, s)
 
 show(io::IO, m::MIME"text/html", s::Servable) = begin
-    sc = Toolips.SpoofConnection()
-    write!(sc, s)
-    show(io, sc.http.text)
+    show(io, string(s))
+end
+
+show(io::IO, m::MIME"text/html", s::Vector{<:AbstractComponent}) = begin
+    show(io, join([string(comp) for comp in s]))
 end
 
 include("templating.jl")
+include("componentio.jl")
+
 
 export px, pt, per, s, ms, deg, turn
 export rgba, translate, matrix, skew, rotate, scale

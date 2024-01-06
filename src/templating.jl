@@ -94,36 +94,6 @@ function style!(args::Any ...)
     nothing
 end
 
-"""
-**Interface**
-### animate!(s::Style, a::Animation) -> _
-------------------
-Sets the Animation as a property of the style.
-#### example
-```
-anim = Animation("fade_in")
-anim[:from] = "opacity" => "0%"
-anim[:to] = "opacity" => "100%"
-
-animated_style = Style("example")
-animate!(animated_style, anim)
-```
-"""
-function animate!(s::Style, a::Animation)
-    s["animation-name"] = string(a.name)
-    s["animation-duration"] = string(a.length) * "s"
-    if a.iterations == 0
-        s["animation-iteration-count"] = "infinite"
-    else
-        s["animation-iteration-count"] = string(a.iterations)
-    end
-    push!(s.extras, a)
-end
-
-function animate!(s::Component{<:Any}, a::Animation)
-
-end
-
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
     newstyle = Style("$(s.name):$name")
     [push!(newstyle.properties, p) for p in ps]
@@ -168,7 +138,7 @@ const measures = WebMeasure{:measure}()
 # size
 const px = WebMeasure{:px}()
 const pt = WebMeasure{:pt}()
-const in = WebMeasure{:in}()
+const inch = WebMeasure{:in}()
 const pc = WebMeasure{:pc}()
 const mm = WebMeasure{:mm}()
 const cm = WebMeasure{:cm}()
