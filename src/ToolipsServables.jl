@@ -1,89 +1,104 @@
 module ToolipsServables
-import Base: write, div, in, getindex, setindex!, delete!, push!, string, (:), show, display
+import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
+
+"""
+#### abstract type Servable
+A `Servable` is a type intended to be written to IO that is served to a server. ToolipsServables 
+comes with two `Servable` types,
+- All servables have a `name`.
+- All servables are dispatched to `string`.
+###### Consistencies
+- name**::String**
+- `string(serv:**:Servable**)`
+"""
 abstract type Servable end
 
-function write(io::IO, servables::Servable ...)
+string(serv::Servable) = ""
+
+function write!(io::IO, servables::Servable ...)
     write(io, join([string(serv) for serv in servables]))
 end
 
-function write(io::String, servables::Servable ...)
+function write!(io::String, servables::Servable ...)
     io = io * join([string(serv) for serv in servables])
 end
 
+function getindex(vs::Vector{<:Servable}, n::String)
+    f = findfirst(c::Servable -> c.name == name, vs)
+    if ~(isnothing(f))
+        return(vec[f])::Servable
+    end
+    println("component $name not in $(join([comp.name for comp in vec], "| "))")
+    throw(KeyError(name))
+end
 """
-
+```julia
+File{T <: Any} <: Servable
+```
+The `File` `Servable` writes a file to a `Connection`. `T` will be the file extension 
+of the file, meaning a `.html` file becomes a `File{:html}`. Getting index on a file, `File[]`, 
+will yield the field path. Using `string` on a file will read the file as a `String`.
+- name**::String**
+- path**::String**
+```julia
+- File(`dir`**::String**)
+```
 """
-mutable struct File <: Servable
-    uri::String
+mutable struct File{T <: Any} <: Servable
+    name::String
+    path::String
     function File(dir::String)
-        new(dir)::File
+        dir = replace(dir, "\\" => "/")
+        ftsplit = split(dir, ".")
+        fending = join(ftsplit[2:length(ftsplit)])
+        nsplit = split(dir, "/")
+        new{:}(join(nsplit[length(nsplit)], nsplit[1:length(nsplit) - 1], "/"))::File
     end
 end
 
-string(f::File) = read(f.uri, String)
+function getindex(f::File{<:Any}, args ...)
+    f.path * "/" * f.name
+end
+
+string(f::File{<:Any}) = read(f[], String)
 
 """
 ### abstract type AbstractComponent <: Servable
 Components are html elements.
 ### Consistencies
-- properties::Dict{<:Any, Any}
-- extras::Vector{Servable}
-- name::String
-### Servable Consistencies
+- properties**::Dict{Symbol, Any}**
+##### <:Servable
+- `name`**::String**
+- string(**::AbstractComponent**)
 ```
 """
 abstract type AbstractComponent <: Servable end
 
 function in(name::String, v::Vector{<:AbstractComponent})
-
+    pos = findfirst(c::AbstractComponent -> c.name == name, pos)
+    ~(isnothing(pos))
 end
 
-function getindex()
-
+function getindex(vec::Vector{<:AbstractComponent}, name::String)::AbstractComponent
+    f = findfirst(c::AbstractComponent -> c.name == name, vec)
+    if ~(isnothing(f))
+        return(vec[f])::AbstractComponent
+    end
+    println("component $name not in $(join([comp.name for comp in vec], "| "))")
+    throw(KeyError(name))
 end
 
-function delete!(name::String, v::Vector{<:AbstractComponent})
-
+function delete!(name::String, v::Vector{<:AbstractComponent})::Nothing
+    f = findfirst(c::AbstractComponent -> c.name == name, vec)
+    if ~(isnothing(f))
+        deleteat!(vec, f); nothing
+    end
+    println("component $name not in $(join([comp.name for comp in vec], "| "))")
+    throw(KeyError(name))
 end
 
 """
-### Component{tag} <: AbstractComponent <: Servable
-- name::String
-- f::Function
-- tag::String
-- properties::Dict
-A component is a standard servable which is used to represent HTML tag
-structures. Indexing a Component with a Symbol or a String will return or set
-a Component's property to that index. The two special indexes are :children and
-:text. :text will change the inner content of the Component and :children is
-where components that will be written inside the Component go. You can add to
-these with push!(c::Servable, c2::Servable)
-#### example
-```
-using Toolips
 
-image_style = Style("example")
-image_anim = Animation("img_anim")
-image_anim[:from] = "opacity" => "0%"
-image_anim[:to] = "opacity" => "100%"
-animate!(image_style)
-
-r = route("/") do c::AbstractConnection
-    newimage = img("newimage", src = "/logo.png")
-    style!(newimage, image_style)
-    write!(c, newimage)
-end
-```
-------------------
-#### field info
-- name::String - The name field is the way that a component is denoted in code.
-- f::Function - The function that gets called with the Connection as an
-argument.
-- properties::Dict - A dictionary of symbols and values.
-------------------
-##### constructors
-- Component(name::String = "", tag::String = "", properties::Dict = Dict())
-- Component(name::String, tag::String, props::Base.Pairs)
 """
 mutable struct Component{T <: Any} <: AbstractComponent
     name::String
@@ -108,8 +123,20 @@ end
 getindex(s::AbstractComponent, symb::Symbol) = s.properties[symb]
 getindex(s::AbstractComponent, symb::String) = s.properties[Symbol(symb)]
 
-setindex!(s::AbstractComponent, a::Any, symb::Symbol) = s.properties[symb] = a
-setindex!(s::AbstractComponent, a::Any, symb::String) = s.properties[Symbol(symb)] = a
+setindex!(s::AbstractComponent, a::Any, symb::Symbol) = s.properties[symb]::typeof(a) = a
+setindex!(s::AbstractComponent, a::Any, symb::String) = s.properties[Symbol(symb)]::typeof(a) = a
+
+function propstring(properties::Dict{Symbol, Any})::String
+    notupe::Tuple{Symbol, Symbol} = (:text, :children, :extras)
+   join(["$(prop[1])=\"$(prop[2])\"" for prop in filter(c -> c[1] in notupe, properties)], " ")
+end
+
+string(comp::Component{<:Any}) = begin
+    text::String = comp.properties[:text]
+    children = [string(child) for child in comp.properties[:children]]
+    extras = [string(child) for child in comp.properties[:extras]]
+    "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
+end
 
 """
 **Interface**
@@ -123,126 +150,15 @@ t = copy!(c)
 ```
 """
 function copy(c::Component{<:Any})
-    props = copy(c.properties)
-    extras = copy(c.extras)
-    tag = copy(c.tag)
-    name = copy(c.name)
-    comp = Component(name, tag, props)
-    comp.extras = extras
+    comp = Component(name, tag, copy(c.properties))
     comp
 end
 
-push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
-
-string(comp::Component{<:Any}) = begin
-    propstring()
-    special_keys::Vector{Symbol} = [:text, :children]
-    extras::Vector{Servable} = comp.extras
-    tag::String = comp.tag
-    name::String = comp.name
-    open_tag::String = "<$tag id=$name"
-    text::String = ""
-    [begin
-        if ~(property in special_keys)
-            prop::String = string(properties[property])
-            propkey::String = string(property)
-           open_tag = open_tag * " $propkey=$prop"
-        else
-            if property == :text
-                text = properties[property]
-            end
-        end
-    end for property in keys(properties)]
-    write!(c, open_tag * ">")
-    if length(properties[:children]) > 0
-        write!(c, properties[:children])
-   end
-   write!(c, "$text</$tag>")
-   write!(c, extras)
-end
-
 """
-### abstract type StyleComponent <: Servable
-Not much different from a normal **AbstractComponent**, simply an abstract type step for the
-interface to separate working with Animations and Styles.
-### AbstractComponent Consistencies
- - properties::Dict{Any, Any}
- - extras::Vector{Servable}
- - name::String
-### Servable Consistencies
-```
-Servables can be written to a Connection via thier f() function and the
-interface. They can also be indexed with strings or symbols to change properties
-##### Consistencies
-- f::Function - Function whose output to be written to http. Must take a single
-positonal argument of type ::Connection or ::AbstractConnection
-```
+
 """
 abstract type StyleComponent <: AbstractComponent end
 
-"""
-### Animation
-- name::String
-- properties::Dict
-- f::Function
-- delay::Float64
-- length::Float64
-- iterations::Integer
-An animation can be used to animate Styles with the animate! method. Animating
-is done by indexing by either percentage, or symbols, such as from and to.
-##### example
-```
-anim = Animation("myanim")
-anim[:from] = "opacity" => "0%"
-anim[:to] = "opacity" => "100%"
-style = Style("example")
-animate!(style, anim)
-```
-------------------
-##### field info
-- name::String - The name of the animation.
-- properties::Dict - The properties that have been pushed so far.
-- f::Function - The function called when writing to a Connection.
-- delay::Float64 - The delay before the animation begins.
-- length::Float64 - The amount of time the animation should play.
-- iterations::Integer - The number of times the animation should repeat. When
-set to 0 the animation will loop indefinitely.
-------------------
-##### constructors
-Animation(name::String = "animation", delay::Float64 = 0.0,
-        length::Float64 = 5.2, iterations::Integer = 1)
-    """
-mutable struct Animation <: StyleComponent
-    name::String
-    properties::Dict
-    extras::Vector{Servable}
-    f::Function
-    delay::Float64
-    length::Float64
-    iterations::Integer
-    function Animation(name::String = "animation"; delay::Float64 = 0.0,
-        length::Float64 = 5.2, iterations::Integer = 1)
-       #== f(c::AbstractConnection) = begin
-            s::String = "<style id=$name> @keyframes $name {"
-            [begin
-                vals = properties[anim]
-                s = s * "$anim {" * vals * "}"
-            end for anim in keys(properties)]
-            write!(c, string(s * "}</style>"))
-        end
-        f() = begin
-            s::String = "<style> @keyframes $name {"
-            for anim in keys(properties)
-                vals = properties[anim]
-                s = s * "$anim {" * vals * "}"
-            end
-            string(s * "}</style>")::String
-        end
-        ==#
-        properties::Dict = Dict()
-        new(name, properties, Vector{Servable}(), f, delay, length, iterations)::Animation
-    end
-end
 
 """
 ### Style
@@ -301,56 +217,57 @@ string(comp::Style) = begin
     write!(c, extras)
 end
 
-function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
-    if "style" in keys(c.properties)
-        c["style"] = c["style"][1:length(c["style"]) - 1]
-    else
-        c["style"] = "'"
-    end
-    for style in s
-        k, v = style[1], style[2]
-        c["style"] = c["style"] * "$k:$v;"
-    end
-    c["style"] = c["style"] * "'"
-end
-
-function style!(args::Any ...)
-    styles = filter(v -> typeof(v) <: AbstractComponent, args)
-    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
-    [style!(comp, styles ...) for comp in comps]
-    nothing
-end
+abstract type FrameRenderer end
+abstract type Basic <: FrameRenderer end
 
 """
-**Interface**
-### animate!(s::Style, a::Animation) -> _
-------------------
-Sets the Animation as a property of the style.
-#### example
-```
-anim = Animation("fade_in")
-anim[:from] = "opacity" => "0%"
-anim[:to] = "opacity" => "100%"
 
-animated_style = Style("example")
-animate!(animated_style, anim)
-```
 """
-function animate!(s::Style, a::Animation)
-    s["animation-name"] = string(a.name)
-    s["animation-duration"] = string(a.length) * "s"
-    if a.iterations == 0
-        s["animation-iteration-count"] = "infinite"
-    else
-        s["animation-iteration-count"] = string(a.iterations)
+mutable struct KeyFrameAnimation <: StyleComponent
+    name::String
+    properties::Dict{String, String}
+    delay::Float64
+    length::Float64
+    iterations::Float64
+    function Animation(name::String = "animation"; delay::Float64 = 0.0,
+        length::Float64 = 5.2, iterations::Integer = 1)
+        properties::Dict{Symbol, AnimationFrame{<:Any}} = 
+        Dict{Symbol, AnimationFrame{<:Any}}()
+        new(name, properties, f, delay, length, iterations)::Animation
     end
-    push!(s.extras, a)
 end
 
-function animate!(s::Component{<:Any}, a::Animation)
+const from = "from"
+const to = "to"
+
+function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
+    iterations::Number)
+    KeyFrameAnimation(name, [])
+end
+
+function string(anim::Animation)
 
 end
 
+end
+
+       #== f(c::AbstractConnection) = begin
+            s::String = "<style id=$name> @keyframes $name {"
+            [begin
+                vals = properties[anim]
+                s = s * "$anim {" * vals * "}"
+            end for anim in keys(properties)]
+            write!(c, string(s * "}</style>"))
+        end
+        f() = begin
+            s::String = "<style> @keyframes $name {"
+            for anim in keys(properties)
+                vals = properties[anim]
+                s = s * "$anim {" * vals * "}"
+            end
+            string(s * "}</style>")::String
+        end
+        ==#
 
 function show(io::Base.TTY, c::AbstractComponent)
     print("""$(c.name) ($(c.tag))\n
@@ -377,7 +294,9 @@ end
 
 include("templating.jl")
 
-export Servable, Component, AbstractComponent
+export px, pt, per, s, ms, deg, turn
+export rgba, translate, matrix, skew, rotate, scale
+export Servable, Component, AbstractComponent, File, write!
 export animate!, style!
 export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
 export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6

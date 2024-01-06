@@ -72,6 +72,57 @@ const tr = ComponentTemplate{:tr}
 const th = ComponentTemplate{:th}
 const td = ComponentTemplate{:td}
 
+push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
+
+function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+    if "style" in keys(c.properties)
+        c["style"] = c["style"][1:length(c["style"]) - 1]
+    else
+        c["style"] = "'"
+    end
+    for style in s
+        k, v = style[1], style[2]
+        c["style"] = c["style"] * "$k:$v;"
+    end
+    c["style"] = c["style"] * "'"
+end
+
+function style!(args::Any ...)
+    styles = filter(v -> typeof(v) <: AbstractComponent, args)
+    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
+    [style!(comp, styles ...) for comp in comps]
+    nothing
+end
+
+"""
+**Interface**
+### animate!(s::Style, a::Animation) -> _
+------------------
+Sets the Animation as a property of the style.
+#### example
+```
+anim = Animation("fade_in")
+anim[:from] = "opacity" => "0%"
+anim[:to] = "opacity" => "100%"
+
+animated_style = Style("example")
+animate!(animated_style, anim)
+```
+"""
+function animate!(s::Style, a::Animation)
+    s["animation-name"] = string(a.name)
+    s["animation-duration"] = string(a.length) * "s"
+    if a.iterations == 0
+        s["animation-iteration-count"] = "infinite"
+    else
+        s["animation-iteration-count"] = string(a.iterations)
+    end
+    push!(s.extras, a)
+end
+
+function animate!(s::Component{<:Any}, a::Animation)
+
+end
 
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
     newstyle = Style("$(s.name):$name")
@@ -102,3 +153,45 @@ end
 function (:)(sheet::Component{:sheet}, s::String, vec::Vector{Pair{String, String}})
 
 end
+
+
+
+mutable struct WebMeasure{format} end
+
+*(i::Any, p::WebMeasure{<:Any}) = "$(i)$(typeof(p).parameters[1])"
+
+"""
+###### measures
+
+"""
+const measures = WebMeasure{:measure}()
+# size
+const px = WebMeasure{:px}()
+const pt = WebMeasure{:pt}()
+const in = WebMeasure{:in}()
+const pc = WebMeasure{:pc}()
+const mm = WebMeasure{:mm}()
+const cm = WebMeasure{:cm}()
+# relative size
+const percent = WebMeasure{:%}()
+const per = WebMeasure{:%}()
+const em = WebMeasure{:em}()
+# time
+const seconds = WebMeasure{:s}()
+const s = WebMeasure{:s}()
+const ms = WebMeasure{:ms}()
+# angles
+const deg = WebMeasure{:deg}()
+const turn = WebMeasure{:turn}()
+# colors and transforms
+function rgba(r::Number, g::Number, b::Number, a::Float64)
+    "rgb($r $g $b $a / a)"
+end
+
+translateX(s::String) = "translateX($s)"
+translateY(s::String) = "translateX($s)"
+rotate(s::String) = "rotate($s)"
+matrix(n::Int64 ...) = "matrix(" * join([string(i) for i in n], ", ") * ")"
+translate(x::String, y::String) = "translate()"
+skew(one::String, two::String) = "skew($one, $two)"
+scale(n::Any, n2::Any) = "scale($one, $two)"
