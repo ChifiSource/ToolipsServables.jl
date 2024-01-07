@@ -31,8 +31,10 @@ abstract type Servable end
 
 """
 const Servables = Vector{<:Servable}
-string(serv::Servable) = ""
 
+string(s::Servable) = s.name::String
+
+string(s::Servables) = join([string(serv) for serv in s])
 """
 ```julia
 write!
@@ -107,6 +109,8 @@ Components are html elements.
 """
 abstract type AbstractComponent <: Servable end
 
+string(s::Vector{<:AbstractComponent}) = join([string(serv) for serv in s])
+
 function in(name::String, v::Vector{<:AbstractComponent})
     pos = findfirst(c::AbstractComponent -> c.name == name, pos)
     ~(isnothing(pos))
@@ -138,16 +142,21 @@ mutable struct Component{T <: Any} <: AbstractComponent
     properties::Dict{Symbol, Any}
     tag::String
     Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any} = begin
-        if length(properties) > 1
-            children = Vector{AbstractComponent}(filter(prop -> typeof(prop) <: AbstractComponent, properties))
-            properties = filter!(prop -> typeof(prop) <: AbstractComponent, properties)
-            children = Vector{AbstractComponent}()
+        propkeys = keys(properties)
+        if ~(:text in propkeys)
+            push!(properties, :text => "")
+        end
+        if ~(:children in propkeys)
+            push!(properties, :children => Vector{AbstractComponent}())
+        end
+        if ~(:extras in propkeys)
+            push!(properties, :extras => Vector{AbstractComponent}())
         end
         new{T}(name, properties, tag)
     end
     function Component{T}(name::String = "-", properties ...) where {T <: Any}
         properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
-        new{T}(name, properties, string(T))::Component{T}
+        Component{T}(name,  string(T), properties)::Component{T}
     end
     function Component(tag::String, name::String, props::Any ...; args ...)
         Component{Symbol(tag)}(name, props ...; args ...)
@@ -161,14 +170,16 @@ setindex!(s::AbstractComponent, a::Any, symb::Symbol) = s.properties[symb]::type
 setindex!(s::AbstractComponent, a::Any, symb::String) = s.properties[Symbol(symb)]::typeof(a) = a
 
 function propstring(properties::Dict{Symbol, Any})::String
-    notupe::Tuple{Symbol, Symbol} = (:text, :children, :extras)
-   join(["$(prop[1])=\"$(prop[2])\"" for prop in filter(c -> c[1] in notupe, properties)], " ")
+    notupe::Tuple{Symbol, Symbol, Symbol} = (:text, :children, :extras)
+   join([begin
+        "$(prop[1])=\"$(prop[2])\"" 
+    end for prop in filter(c -> ~(c[1] in notupe), properties)], " ")
 end
 
 string(comp::Component{<:Any}) = begin
     text::String = comp.properties[:text]
-    children = [string(child) for child in comp.properties[:children]]
-    extras = [string(child) for child in comp.properties[:extras]]
+    children = string(comp[:children])
+    extras = string(comp[:extras])
     "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
 end
 
@@ -224,14 +235,10 @@ this is an animation.
 mutable struct Style <: StyleComponent
     name::String
     properties::Dict{Symbol, Any}
-    function Style(name::String, properties::Dict{Any, Any}, extras::Vector{Servable})
-        new(name, properties, extras)::Style
-    end
-    function Style(name::String, a::Pair ...; args ...)
-        props::Vector{Pair{Any, Any}} = Base.vect(args ..., a ...)
-        properties::Dict{Any, Symbol} = Dict{Any, Any}(props)
+    function Style(name::String, a::Pair{String, <:Any} ...; args ...)
+        properties::Dict{Any, Symbol} = Dict{Any, Any}([Symbol(k[1]) => k[2] for k in a])
         extras::Vector{Servable} = Vector{Servable}()
-        Style(name, properties, extras)::Style
+        Style(name, properties)::Style
     end
 end
 
