@@ -8,7 +8,7 @@ end
 
 Component(comp::ComponentTemplate{<:Any}, name::String, props ...; args ...) = begin
     T = typeof(comp).parameters[1]
-    Component{T}(name, props ...; args ...)
+    Component{T}(name, props ..., args ...)
 end
 
 """

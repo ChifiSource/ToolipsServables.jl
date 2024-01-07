@@ -138,18 +138,16 @@ mutable struct Component{T <: Any} <: AbstractComponent
     properties::Dict{Symbol, Any}
     tag::String
     Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any} = begin
-        new{T}(name, properties, tag)
-    end
-    function Component{T}(name::String = "-", properties::Any ...; tag::String = string(T), args ...) where {T <: Any}
-        children = Vector{AbstractComponent}()
         if length(properties) > 1
             children = Vector{AbstractComponent}(filter(prop -> typeof(prop) <: AbstractComponent, properties))
             properties = filter!(prop -> typeof(prop) <: AbstractComponent, properties)
+            children = Vector{AbstractComponent}()
         end
-        properties = Dict{Symbol, Any}(vcat([Symbol(prop[1]) => string(prop[2]) for prop in properties],
-        [Symbol(prop[1]) => string(prop[2]) for prop in args], :children => children, 
-        :extras => Vector{AbstractComponent}()) ...)
-        new{T}(name, properties, tag)::Component{T}
+        new{T}(name, properties, tag)
+    end
+    function Component{T}(name::String = "-", properties ...) where {T <: Any}
+        properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+        new{T}(name, properties, string(T))::Component{T}
     end
     function Component(tag::String, name::String, props::Any ...; args ...)
         Component{Symbol(tag)}(name, props ...; args ...)
@@ -276,7 +274,7 @@ end
 function string(anim::AbstractAnimation)
     properties = anim.properties
     props::String = join(["$(p[1]):$(p[2])" for p in properties], ";")
-    """<style id="$(anim.name)">@keyframes $(anim.name){$()}"""
+    """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}"""
 end
 
 
