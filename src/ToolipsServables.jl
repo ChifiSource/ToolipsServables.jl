@@ -19,13 +19,32 @@ A `Servable` is a type intended to be written to IO that is served to a server. 
 comes with two `Servable` types,
 - All servables have a `name`.
 - All servables are dispatched to `string`.
+- `Servables` (?Servables) can be indexed using a `String` corresponding to `name`.
 ###### Consistencies
 - name**::String**
 - `string(serv:**:Servable**)`
 """
 abstract type Servable end
 
+"""
+#### Servables (Vector{<:Servable})
+
+"""
+const Servables = Vector{<:Servable}
 string(serv::Servable) = ""
+
+"""
+```julia
+write!
+````
+The `write` `Function` is used to `write!` `Servables` and Julia data-types to 
+a `IO` or a `String`.
+```julia
+- write!(io, args ...)
+- write!(io, towrite, args ...)
+```
+"""
+function write! end
 
 function write!(io::IO, servables::Servable ...)
     write(io, join([string(serv) for serv in servables]))
@@ -43,6 +62,7 @@ function getindex(vs::Vector{<:Servable}, n::String)
     println("component $name not in $(join([comp.name for comp in vec], "| "))")
     throw(KeyError(name))
 end
+
 """
 ```julia
 File{T <: Any} <: Servable
@@ -117,7 +137,6 @@ mutable struct Component{T <: Any} <: AbstractComponent
     name::String
     properties::Dict{Symbol, Any}
     tag::String
-
     Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any} = begin
         new{T}(name, properties, tag)
     end
@@ -206,14 +225,13 @@ this is an animation.
 """
 mutable struct Style <: StyleComponent
     name::String
-    properties::Dict{Any, Any}
-    extras::Vector{Servable}
+    properties::Dict{Symbol, Any}
     function Style(name::String, properties::Dict{Any, Any}, extras::Vector{Servable})
         new(name, properties, extras)::Style
     end
     function Style(name::String, a::Pair ...; args ...)
         props::Vector{Pair{Any, Any}} = Base.vect(args ..., a ...)
-        properties::Dict{Any, Any} = Dict{Any, Any}(props)
+        properties::Dict{Any, Symbol} = Dict{Any, Any}(props)
         extras::Vector{Servable} = Vector{Servable}()
         Style(name, properties, extras)::Style
     end
@@ -221,9 +239,7 @@ end
 
 string(comp::Style) = begin
     properties = comp.properties
-    name = comp.name
-    extras = comp.extras
-    css::String = "<style id=$name>$name { "
+    css::String = "$(string(properties.extras)) <style id=$name>$name {$(join(["$(p[1]);$(p[2])" for p in properties])))}"
     [begin
         property::String = string(rule)
         value::String = string(properties[rule])
@@ -241,15 +257,11 @@ abstract type AbstractAnimation <: StyleComponent end
 """
 mutable struct KeyFrameAnimation <: AbstractAnimation
     name::String
-    properties::Dict{String, Vector{String}}
-    delay::Float64
-    length::Float64
-    iterations::Float64
-    function Animation(name::String = "animation"; delay::Float64 = 0.0,
-        length::Float64 = 5.2, iterations::Integer = 1)
-        properties::Dict{Symbol, AnimationFrame{<:Any}} = 
-        Dict{Symbol, AnimationFrame{<:Any}}()
-        new(name, properties, f, delay, length, iterations)::Animation
+    properties::Dict{Symbol, Vector{String}}
+    function Animation(name::String = "animation"; delay::Any = 0.0,
+        length::Any = 5.2, iterations::Integer = 1)
+        properties::Dict{Symbol, String} = Dict{Symbol, AnimationFrame{<:Any}}()
+        new(name, properties)::Animation
     end
 end
 
@@ -262,7 +274,9 @@ function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay:
 end
 
 function string(anim::AbstractAnimation)
-    """@keyframes $(anim.dame)"""
+    properties = anim.properties
+    props::String = join(["$(p[1]):$(p[2])" for p in properties], ";")
+    """<style id="$(anim.name)">@keyframes $(anim.name){$()}"""
 end
 
 
@@ -274,10 +288,7 @@ end
         ==#
 
 function show(io::Base.TTY, c::AbstractComponent)
-    print("""$(c.name) ($(c.tag))\n
-    $(join([string(prop[1]) * " = " * string(prop[2]) * "\n" for prop in c.properties]))
-    $(showchildren(c))
-    """)
+    show(io, MIME"text/html"(), string(mdcomponent(c)))
 end
 
 function show(io::Base.TTY, c::StyleComponent)

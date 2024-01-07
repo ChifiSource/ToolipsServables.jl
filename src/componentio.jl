@@ -98,7 +98,7 @@ componentcss(comps::Vector{<:StyleComponent}) = begin
 
 end
 
-function mdcomponent(s::String)
+function mdcomponent(comps::Vector{<:AbstractComponent})
 
 end
 
