@@ -27,7 +27,7 @@ style!(gobutton, leavebutton)
 
 # composing a body:
 
-# making a file
+# components can be written to <: IO or `Strings` with `write!`
 ```
 ###### servable base
 - abstract type `Servable`` end
@@ -45,8 +45,47 @@ style!(gobutton, leavebutton)
 ###### templating
 - `templating` (`?templating`)
 - `style_properties` (`?style_properties`)
-- `style_properties` (`?style_properties`)
-- `style`
+- `arguments` (`?arguments`)
+- `Components` (`?Components`)
+  - `img`
+  - `link`
+  - `meta`
+  - `input`
+  - `a`
+  - `p`
+  - `ul`
+  - `li`
+  - `br`
+  - `i`
+  - `title`
+  - `span`
+  - `iframe`
+  - `svg`
+  - `h1`
+  - `h2`
+  - `h3`
+  - `h4`
+  - `h5`
+  - `h6`
+  - `h`
+  - `element`
+  - `label`
+  - `script`
+  - `nav`
+  - `button`
+  - `form`
+  - `section`
+  - `body`
+  - `header`
+  - `footer`
+  - `b`
+  - `source`
+  - `audio`
+  - `video`
+  - `table`
+  - `tr`
+  - `th`
+  - `td`
 - `keyframes`
 - `style!`
 - `push!`
@@ -64,7 +103,7 @@ style!(gobutton, leavebutton)
 - `context_menu!`
 - `keyinput`
 - `WebMeasure{format <: Any}`
-- `measures`
+- `measures` (`?measures`)
   - `px`
   - `pt`
   - `inch`
@@ -91,30 +130,33 @@ style!(gobutton, leavebutton)
   - `scale(n::Any)`
   - `scale(n::Any, n2::Any)`
 - **io**
-```
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
 
 """
-#### abstract type Servable
+```julia
+abstract type Servable
+```
 A `Servable` is a type intended to be written to IO that is served to a server. ToolipsServables 
 comes with two `Servable` types,
 - All servables have a `name`.
 - All servables are dispatched to `string`.
 - `Servables` (?Servables) can be indexed using a `String` corresponding to `name`.
-###### Consistencies
-- name**::String**
-- `string(serv:**:Servable**)`
+---
+- See also: `Servables`, `File`, `Component`, `templating`
 """
 abstract type Servable end
 
 """
-#### Servables (Vector{<:Servable})
+```julia
+Servables{T} (alias for Vector{T} where {T <: Servable})
+```
 `Servables` are able to be written to `IO` or a `String` using `write!`. Indexing a 
 set of `Servables` will grab a `Servable` by `name`
+- See also: `Servable`
 """
-const Servables = Vector{<:Servable}
+const Servables{T} = Vector{T} where {T <: Servable}
 
 string(s::Servable) = s.name::String
 
@@ -122,19 +164,34 @@ string(s::Servables) = join([string(serv) for serv in s])
 
 """
 ```julia
-write!
+write!(io, args ...) -> _
 ````
-The `write` `Function` is used to `write!` `Servables` and Julia data-types to 
-a `IO` or a `String`.
+The `write` `Function` is used to `write!` `Servables` to 
+a `<: IO` or a `String`.
 ```julia
-- write!(io, args ...)
-- write!(io, towrite, args ...)
+write!(io::IO, servables::Servable ...) -> ::Nothing
+write!(io::String, servables::Servable ...) -> ::String
+```
+---
+```example
+using ToolipsServables
+# write candidate
+str_sample = ""
+buff = IOBuffer()
+
+# templating
+mycomp = div("example", align = "center")
+
+# writing
+write!(buff, mycomp)
+str_sample = write!(str_sample, mycomp)
 ```
 """
 function write! end
 
 function write!(io::IO, servables::Servable ...)
     write(io, join([string(serv) for serv in servables]))
+    nothing
 end
 
 function write!(io::String, servables::Servable ...)
@@ -161,7 +218,17 @@ The `File` `Servable` writes a file to a `Connection`. `T` will be the file exte
 of the file, meaning a `.html` file becomes a `File{:html}`. Getting index on a file, `File[]`, 
 will yield the field path. Using `string` on a file will read the file as a `String`.
 ```julia
-- File(`dir`**::String**)
+File(`dir`**::String**)
+```
+---
+```example
+# write! candidate
+io = IOBuffer()
+
+# make a file
+myf = File("myfiles/example")
+# writing
+write!(io, myf)
 ```
 """
 mutable struct File{T <: Any} <: Servable
@@ -189,12 +256,13 @@ end
 
 """
 ### abstract type AbstractComponent <: Servable
-Components are html elements.
+Components are html elements, 
 ### Consistencies
 - properties**::Dict{Symbol, Any}**
-##### <:Servable
+##### consistencies
 - `name`**::String**
-- string(**::AbstractComponent**)
+- `string(**::AbstractComponent**)`
+- `properties**::Dict{Symbol, <:Any}**`
 ```
 """
 abstract type AbstractComponent <: Servable end
@@ -244,8 +312,9 @@ mutable struct Component{T <: Any} <: AbstractComponent
         end
         new{T}(name, properties, tag)
     end
-    function Component{T}(name::String = "-", properties ...) where {T <: Any}
+    function Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
         properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+        (push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args)
         Component{T}(name,  string(T), properties)::Component{T}
     end
     function Component(tag::String, name::String, props::Any ...; args ...)
@@ -273,6 +342,15 @@ string(comp::Component{<:Any}) = begin
     "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
 end
 
+function copy(c::Component{<:Any})
+    comp = Component(name, tag, copy(c.properties))
+    comp
+end
+
+"""
+
+"""
+abstract type StyleComponent <: AbstractComponent end
 
 """
 ```julia
@@ -286,24 +364,14 @@ c = p("myp")
 t = copy!(c)
 ```
 """
-function copy(c::AbstractComponent)
-    T = typeof(c)
-    comp
+function copy(c::StyleComponent)
 end
 
-function copy(c::Component{<:Any})
-    comp = Component(name, tag, copy(c.properties))
-    comp
-end
 
 """
-
-"""
-abstract type StyleComponent <: AbstractComponent end
-
-
-"""
-### Style
+```julia
+Style <: StyleComponent
+```
 - name::String
 - f::Function
 - properties::Dict{Any, Any}
@@ -369,20 +437,20 @@ abstract type AbstractAnimation <: StyleComponent end
 """
 
 """
-mutable struct KeyFrameAnimation <: AbstractAnimation
+mutable struct Animation{T <: Any} <: AbstractAnimation
     name::String
     properties::Dict{Symbol, Vector{String}}
-    function Animation(name::String = "animation", properties::Pair{String, <:Any}; delay::Any = 0.0,
-        length::Any = 5.2, iterations::Integer = 1)
+    function Animation{T}(name::String, properties::Pair{String, <:Any} ...; 
+        delay::Any = 0.0, length::Any = 5.2, iterations::Integer = 1, keyargs ...) where {T <: Any}
         properties::Dict{Symbol, String} = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
         new(name, properties)
     end
 end
 
-function string(anim::AbstractAnimation)
+function string(anim::Animation{:keyframes})
     properties = anim.properties
     props::String = join(["$(p[1]):$(p[2])" for p in properties], ";")
-    """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}"""
+    """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
 
 function show(io::Base.TTY, c::AbstractComponent)
