@@ -7,19 +7,90 @@
 `ToolipsServables` provides a composable parametric platform for templating 
     UIs.
 ```example
+using ToolipsServables
+# (From Toolips ?):
+#using Toolips.Components
 
+# creating components:
+maindiv::Component{:div} = div("centered", align = "center")
+greeter_heading::Component{:h3} = h3("greeter", text = "hello world!")
+# creating a style
+bgstyle::Style = style("greeter_style", "color" => "white", 
+"font-weight" => "bold")
+
+# styling a component directly:
+style!(maindiv, "background-color" => "purple", "margin-top" => 5px)
+leavebutton = button("leave", text = "leave")
+gobutton = button("go", text = "go!")
+
+style!(gobutton, leavebutton)
+
+# composing a body:
+
+# making a file
 ```
-- Provides
-```julia
+###### servable base
 - abstract type `Servable`` end
-- `File` <: Servable
+- `File` <: `Servable`
 - `AbstractComponent` <: `Servable`
 - `Component{T <: Any}` <: `AbstractComponent`
 - abstract type `StyleComponent` <: `AbstractComponent`
 - `Servables` (type alias for `Vector{<:Servable}`)
-- `write!`
+- `write!(::IO, ::Servable)`
+- `write!(::String, ::Servable)`
 - `copy(c::Component{<:Any})`
-- 
+- `Style` <: `AbstractComponent`
+- abstract type `AbstractAnimation` <: `StyleComponent`
+
+###### templating
+- `templating` (`?templating`)
+- `style_properties` (`?style_properties`)
+- `style_properties` (`?style_properties`)
+- `style`
+- `keyframes`
+- `style!`
+- `push!`
+- `textdiv`
+- `textbox`
+- `password`
+- `numberinput`
+- `rangeslider`
+- `option`
+- `dropdown`
+- `checkbox`
+- `colorinput`
+- `progress`
+- `cursor`
+- `context_menu!`
+- `keyinput`
+- `WebMeasure{format <: Any}`
+- `measures`
+  - `px`
+  - `pt`
+  - `inch`
+  - `pc`
+  - `mm`
+  - `cm`
+  - `percent`
+  - `per`
+  - `em`
+  - `seconds`
+  - `s`
+  - `ms`
+  - `deg`
+  - `turn`
+  - `rgba(r::Number, g::Number, b::Number, a::Float64)`
+  - `from`
+  - `to`
+  - `translateX(s::String)`
+  - `translateY(s::String)`
+  - `rotate(s::String)`
+  - `matrix(n::Int64 ...)`
+  - `translate(x::String, y::String)`
+  - `skew(one::String, two::String)`
+  - `scale(n::Any)`
+  - `scale(n::Any, n2::Any)`
+- **io**
 ```
 """
 module ToolipsServables
@@ -202,17 +273,24 @@ string(comp::Component{<:Any}) = begin
     "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
 end
 
+
 """
-**Interface**
-### copy(c::AbstractComponent) -> ::AbstractComponent
+```julia
+copy(c::AbstractComponent) -> ::AbstractComponent
+```
 ------------------
-copies c.
+Copies c.
 #### example
 ```
 c = p("myp")
 t = copy!(c)
 ```
 """
+function copy(c::AbstractComponent)
+    T = typeof(c)
+    comp
+end
+
 function copy(c::Component{<:Any})
     comp = Component(name, tag, copy(c.properties))
     comp
@@ -230,50 +308,62 @@ abstract type StyleComponent <: AbstractComponent end
 - f::Function
 - properties::Dict{Any, Any}
 - extras::Vector{Servable}
-Creates a style from attributes, can style a Component using the style! method.
-Names should be consistent with CSS names. For example, a default h1 style would
-be named "h1". A heading style for a specific class should be "h1.myheading"
-##### example
-```
-style = Style("p.mystyle", color = "blue")
-style["opacity"] = "50%"
-comp = Component()
-style!(comp, style)
-```
-------------------
-##### field info
-- name::String - The name of the style. Should be consistent with CSS naming.
-- f::Function - The function f, called by write! when writing to a Connection.
-- properties::Dict{Any, Any} - A dict of style attributes.
-- extras::String - Extra components to be written along with the style. Usually
-this is an animation.
-------------------
+
+Styles hold and translate CSS styling pairs. For example, a default h1 style would
+be named "h1". A heading style for a specific class should be "h1.myheading". A 
+universal class that works on all components should be `#`. 
+A high-level `style` component is available to construct styles. We can use `style!` 
+to `style!` a `Component` directly, `style!` to mutate the styles of a `Style`, or `style` to 
+create new styles. 
+
+- See also: `style`, `style!`, `StyleComponent`, `style_properties`, `templating`, `AbstractAnimation`
 ##### constructors
 - Style(name::String; props ...)
+---
+```julia
+style(name::String, stylepairs::Pair{String, <:Any}) -> Style
+```
+A `Style` can be written using `write!`, and converted to a `String` using the `string` 
+function.
+------------------
+
+##### example
+```julia
+# create a style
+comp_style::Style = style("div.sample", "color" => "red")
+
+# create a `Component`:
+comp::Component{:div} = div("example")
+
+# set class to sample
+style!(comp, comp_style)
+
+# style! a `Component`
+style!(comp, "background-color" => "black", "border-radius" => 2px)
+```
 """
 mutable struct Style <: StyleComponent
     name::String
     properties::Dict{Symbol, Any}
-    function Style(name::String, a::Pair{String, <:Any} ...; args ...)
-        properties::Dict{Any, Symbol} = Dict{Any, Any}([Symbol(k[1]) => k[2] for k in a])
-        extras::Vector{Servable} = Vector{Servable}()
-        Style(name, properties)::Style
+    function Style(name::String, a::Pair{String, <:Any} ...)
+        properties::Dict{Symbol, Any} = Dict{Any, Any}([Symbol(k[1]) => k[2] for k in a])
+        if ~(:extras in keys(properties))
+            push!(properties, :extras => Vector{AbstractComponent}())
+        end
+        new(name, properties)::Style
     end
 end
 
 string(comp::Style) = begin
     properties = comp.properties
-    css::String = "$(string(properties.extras)) <style id=$name>$name {$(join(["$(p[1]);$(p[2])" for p in properties])))}"
-    [begin
-        property::String = string(rule)
-        value::String = string(properties[rule])
-        css = css * "$property: $value; "
-    end for rule in keys(properties)]
-    css = css * "}</style>"
-    write!(c, css)
-    write!(c, extras)
+    name = comp.name
+    extras = join([string(comp) for comp in properties[:extras]])
+    delete!(properties, :extras)
+    "$(extras) <style id=$name>$name {$(join(["$(p[1]):$(p[2])" for p in properties]));}</style>"
 end
 
+"""
+"""
 abstract type AbstractAnimation <: StyleComponent end
 
 """
@@ -282,19 +372,11 @@ abstract type AbstractAnimation <: StyleComponent end
 mutable struct KeyFrameAnimation <: AbstractAnimation
     name::String
     properties::Dict{Symbol, Vector{String}}
-    function Animation(name::String = "animation"; delay::Any = 0.0,
+    function Animation(name::String = "animation", properties::Pair{String, <:Any}; delay::Any = 0.0,
         length::Any = 5.2, iterations::Integer = 1)
-        properties::Dict{Symbol, String} = Dict{Symbol, AnimationFrame{<:Any}}()
-        new(name, properties)::Animation
+        properties::Dict{Symbol, String} = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+        new(name, properties)
     end
-end
-
-const from = "from"
-const to = "to"
-
-function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
-    iterations::Number)
-    KeyFrameAnimation(name, Dict())
 end
 
 function string(anim::AbstractAnimation)
@@ -302,14 +384,6 @@ function string(anim::AbstractAnimation)
     props::String = join(["$(p[1]):$(p[2])" for p in properties], ";")
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}"""
 end
-
-
-       #== f(c::AbstractConnection) = begin
-@keyframes example {
-  from {background-color: red;}
-  to {background-color: yellow;}
-}
-        ==#
 
 function show(io::Base.TTY, c::AbstractComponent)
     show(io, MIME"text/html"(), string(mdcomponent(c)))

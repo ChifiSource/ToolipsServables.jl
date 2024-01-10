@@ -25,9 +25,9 @@ DOCTYPE() = "<!DOCTYPE html>"
 
 const templating = ComponentTemplate{:info}
 
-const style_properties = ComponentTemplate{:args}
+const style_properties = ComponentTemplate{:info}
 
-const arguments = ComponentTemplate{:args}
+const arguments = ComponentTemplate{:info}
 
 div(name::String, args::Any ...; keyargs ...) = Component(ComponentTemplate{:div}(), name, args ...; keyargs ...)
 
@@ -69,6 +69,45 @@ const table = ComponentTemplate{:table}
 const tr = ComponentTemplate{:tr}
 const th = ComponentTemplate{:th}
 const td = ComponentTemplate{:td}
+
+function style! end
+
+push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
+
+style!(c::Component{:sheet}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+
+"""
+
+"""
+const style = Style
+
+function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+    if "style" in keys(c.properties)
+        c["style"] = c["style"][1:length(c["style"]) - 1]
+    else
+        c["style"] = "'"
+    end
+    for style in s
+        k, v = style[1], style[2]
+        c["style"] = c["style"] * "$k:$v;"
+    end
+    c["style"] = c["style"] * "'"
+end
+
+function style!(args::Any ...)
+    styles = filter(v -> typeof(v) <: AbstractComponent, args)
+    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
+    [style!(comp, styles ...) for comp in comps]
+    nothing
+end
+
+
+"""
+"""
+function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
+    iterations::Number)
+    KeyFrameAnimation(name, Dict())
+end
 
 """
 **Defaults**
@@ -156,13 +195,7 @@ function setCurrentCursorPosition$(name)(chars) {
     push!(box.extras, raw, caretpos)
     return(box)::Component{:div}
 end
-#==
-function set_textdiv_caret!(cm::ToolipsSession.AbstractComponentModifier,
-    txtd::Component{:div},
-    char::Int64)
-    push!(cm.changes, "setCurrentCursorPosition$(txtd.name)($char);")
-end
-==#
+
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
     text::String = "", size::Integer = 10, args ...)
 input(name, type = "text", minlength = range[1], maxlength = range[2],
@@ -261,32 +294,6 @@ function keyinput(name::String, p::Pair{String, <:Any} ...; text = "w", args ...
     onclick = "this.focus();", value = "W",  args ...)
 end
 
-push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
-
-function style! end
-
-style!(c::Component{:sheet}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
-
-function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
-    if "style" in keys(c.properties)
-        c["style"] = c["style"][1:length(c["style"]) - 1]
-    else
-        c["style"] = "'"
-    end
-    for style in s
-        k, v = style[1], style[2]
-        c["style"] = c["style"] * "$k:$v;"
-    end
-    c["style"] = c["style"] * "'"
-end
-
-function style!(args::Any ...)
-    styles = filter(v -> typeof(v) <: AbstractComponent, args)
-    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
-    [style!(comp, styles ...) for comp in comps]
-    nothing
-end
-
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
     newstyle = Style("$(s.name):$name")
     [push!(newstyle.properties, p) for p in ps]
@@ -351,6 +358,15 @@ function rgba(r::Number, g::Number, b::Number, a::Float64)
     "rgb($r $g $b $a / a)"
 end
 
+"""
+"""
+const from = "from"
+
+"""
+"""
+const to = "to"
+
+
 translateX(s::String) = "translateX($s)"
 translateY(s::String) = "translateX($s)"
 rotate(s::String) = "rotate($s)"
@@ -358,3 +374,5 @@ matrix(n::Int64 ...) = "matrix(" * join([string(i) for i in n], ", ") * ")"
 translate(x::String, y::String) = "translate()"
 skew(one::String, two::String) = "skew($one, $two)"
 scale(n::Any, n2::Any) = "scale($one, $two)"
+
+scale(n::Any) = "scale($n)"
