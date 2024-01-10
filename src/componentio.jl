@@ -98,9 +98,18 @@ componentcss(comps::Vector{<:StyleComponent}) = begin
 
 end
 
+md_string(comp::Component{<:Any}) = comp[:text]
+md_string(comp::Component{:h1}) = "# $(comp[:text])"
+md_string(comp::Component{:h2}) = "## $(comp[:text])"
+md_string(comp::Component{:h3}) = "### $(comp[:text])"
+md_string(comp::Component{:h4}) = "#### $(comp[:text])"
+md_string(comp::Component{:h5}) = "##### $(comp[:text])"
+md_string(comp::Component{:h6}) = "###### $(comp[:text])"
+
 function mdcomponent(comps::Vector{<:AbstractComponent})
 
 end
+
 
 function componentmd(s::String)
 

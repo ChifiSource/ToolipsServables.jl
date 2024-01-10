@@ -9,6 +9,18 @@
 ```example
 
 ```
+- Provides
+```julia
+- abstract type `Servable`` end
+- `File` <: Servable
+- `AbstractComponent` <: `Servable`
+- `Component{T <: Any}` <: `AbstractComponent`
+- abstract type `StyleComponent` <: `AbstractComponent`
+- `Servables` (type alias for `Vector{<:Servable}`)
+- `write!`
+- `copy(c::Component{<:Any})`
+- 
+```
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
@@ -28,13 +40,15 @@ abstract type Servable end
 
 """
 #### Servables (Vector{<:Servable})
-
+`Servables` are able to be written to `IO` or a `String` using `write!`. Indexing a 
+set of `Servables` will grab a `Servable` by `name`
 """
 const Servables = Vector{<:Servable}
 
 string(s::Servable) = s.name::String
 
 string(s::Servables) = join([string(serv) for serv in s])
+
 """
 ```julia
 write!
@@ -87,15 +101,20 @@ mutable struct File{T <: Any} <: Servable
         ftsplit = split(dir, ".")
         fending = join(ftsplit[2:length(ftsplit)])
         nsplit = split(dir, "/")
-        new{:}(join(nsplit[length(nsplit)], nsplit[1:length(nsplit) - 1], "/"))::File
+        new{:}(string(nsplit[length(nsplit)]), join(nsplit[1:length(nsplit) - 1], "/"))::File
     end
 end
 
 function getindex(f::File{<:Any}, args ...)
+    if f.path == ""
+        return(f.name)::String
+    end
     f.path * "/" * f.name
 end
 
-string(f::File{<:Any}) = read(f[], String)
+string(f::File{<:Any}) = begin
+    read(f[], String)
+end
 
 """
 ### abstract type AbstractComponent <: Servable
@@ -301,7 +320,7 @@ function show(io::Base.TTY, c::StyleComponent)
 end
 
 function show(io::IO, f::File)
-    println("File: $(f.dir)")
+    println("File: $(f.path)|$(f.name)")
 end
 
 display(io::IO, m::MIME"text/html", s::Servable) = show(io, m, s)
