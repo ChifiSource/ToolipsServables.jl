@@ -94,23 +94,29 @@ end
 
 componenthtml(comps::Vector{Component{<:Any}}) = join([string(comp) for comp in comps])
 
-componentcss(comps::Vector{<:StyleComponent}) = begin
-
-end
+componentcss(comps::Vector{<:StyleComponent}) = join([string(comp) for comp in comps])
 
 md_string(comp::Component{<:Any}) = comp[:text]
-md_string(comp::Component{:h1}) = "# $(comp[:text])"
-md_string(comp::Component{:h2}) = "## $(comp[:text])"
-md_string(comp::Component{:h3}) = "### $(comp[:text])"
-md_string(comp::Component{:h4}) = "#### $(comp[:text])"
-md_string(comp::Component{:h5}) = "##### $(comp[:text])"
-md_string(comp::Component{:h6}) = "###### $(comp[:text])"
+md_string(comp::Component{:h1}) = "# $(comp[:text])\n"
+md_string(comp::Component{:h2}) = "## $(comp[:text])\n"
+md_string(comp::Component{:h3}) = "### $(comp[:text])\n"
+md_string(comp::Component{:h4}) = "#### $(comp[:text])\n"
+md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
+md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
+md_string(comp::Component{:hr}) = "---\n"
 
-function mdcomponent(comps::Vector{<:AbstractComponent})
-
+function mdcomponent(s::String)
+    lines = split(s, "\n")
+    comps::Vector{Component} = Vector{Component}()
+    line = 1
+    while true
+        curr_line = lines[line]
+        if length(lines)
+        continue
+    end
 end
 
 
-function componentmd(s::String)
-
+function componentmd(comps::Vector{<:AbstractComponent})
+    [md_string(comp) for comp in comps]
 end

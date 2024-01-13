@@ -60,6 +60,7 @@ const table = Component{:table}
 const tr = Component{:tr}
 const th = Component{:th}
 const td = Component{:td}
+const hr = Component{:hr}
 
 function style! end
 
