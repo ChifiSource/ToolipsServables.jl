@@ -1,14 +1,4 @@
-"""
-### DOCTYPE() -> ::String
-------------------
-DOCTYPE occassionally needs to be written to the top of files to make HTML render
-properly.
-#### example
-```
-write!(c, DOCTYPE())
-```
-"""
-DOCTYPE() = "<!DOCTYPE html>"
+
 
 const templating = nothing
 
@@ -20,8 +10,12 @@ const arguments = nothing
 """
 const elements = nothing
 
-div(name::String, args::Any ...; keyargs ...) = Component(Component{:div}(), name, args ...; keyargs ...)
+"""
 
+"""
+DOCTYPE() = "<!DOCTYPE html>"
+
+div(name::String, args::Any ...; keyargs ...) = Component{:div}(name, args ...; keyargs ...)
 const img = Component{:img}
 const link = Component{:link}
 const meta = Component{:meta}
@@ -61,35 +55,81 @@ const tr = Component{:tr}
 const th = Component{:th}
 const td = Component{:td}
 const hr = Component{:hr}
+const progress = Component{:progress}
+const option = Component{:option}
 
-function style! end
+function select(name::String, options::Vector{Servable}, p::Pair{String, <:Any} ...; args ...)
+    thedrop = Component(name, "select", p ..., args ...)
+    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop[:children] = options
+    thedrop
+end
+
+options(options::String ...) = Vector{AbstractComponent}()
+
+function select(name::String,  p::Pair{String, <:Any} ...; args ...)
+    thedrop = Component(name, "select", p ...; args ...)
+    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop
+end
+
+function progress(name::String, ps::Pair{String, String} ...; args ...)
+    Component(name, "progress", ps...; args ...)
+end
+
+function base64img(name::String, raw::Any, filetype::String = "png",
+    p::Pair{String, Any} ...; args ...)
+    io = IOBuffer();
+    b64 = Base64.Base64EncodePipe(io)
+    show(b64, "image/$filetype", raw)
+    close(b64)
+    mysrc = String(io.data)
+    img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
+    args ...)::Component{:img}
+end
 
 push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
 
-style!(c::Component{:sheet}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+add_to!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
+    comps = filter(c::Servable -> c <: Component{<:Any}, children)
+    noncomps = filter(c::Servable -> ~(c <: Component{<:Any}), children)
+    if length(noncomps) > 0
+        comp[:text] = comp[:text] * join([string(serv) for serv in noncomps])
+    end
+    if length(comps) > 0
+        push!(comp.children, comps ...)
+    end
+end
+
+set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
+    comp[:children] = Vector{AbstractComponent}(children)
+end
+
+style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+
+function style!(sty::Style, anim::AbstractAnimation)
+
+end
+
+function style!(sty::Component{<:Any}, anim::AbstractAnimation)
+
+end
 
 """
 
 """
 const style = Style
 
+function style! end
+
 function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
-    if "style" in keys(c.properties)
-        c["style"] = c["style"][1:length(c["style"]) - 1]
-    else
-        c["style"] = "'"
+    if ~(:style in keys(c.properties))
+        c[:style] = ""
     end
     for style in s
         k, v = style[1], style[2]
-        c["style"] = c["style"] * "$k:$v;"
+        c[:style] = c[:style] * "$k:$v;"
     end
-    c["style"] = c["style"] * "'"
-end
-
-function style!(args::Any ...)
-    styles = filter(v -> typeof(v) <: AbstractComponent, args)
-    comps = filter(v -> ~(typeof(v) <: AbstractComponent), args)
-    [style!(comp, styles ...) for comp in comps]
     nothing
 end
 
@@ -98,7 +138,7 @@ end
 """
 function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
     iterations::Number)
-    KeyFrameAnimation(name, Dict())
+    KeyFrameAnimation(name, Dict(pairs ...))
 end
 
 """
@@ -219,20 +259,10 @@ function rangeslider(name::String, range::UnitRange = 1:100,
             oninput = "\"this.setAttribute('value',this.value);\"", p ..., args ...)
 end
 
-option(name::String, ps::Pair{String, String} ...; args ...) = Component(name,
- "option", ps ..., args ...)
-
-function dropdown(name::String, options::Vector{Servable}, p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component(name, "select", p ..., args ...)
-    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
-    thedrop[:children] = options
-    thedrop
-end
-
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
     args ...)
     ch = input(name, p  ..., type = "checkbox", value = value,
-    oninput = "this.setAttribute('value',this.checked);", args ...)
+    oninput = "this.setAttribute('value',this.checked);", p ...; args ...)
     if value
         ch["checked"] = value
     end
@@ -242,12 +272,8 @@ end
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
     input(name, type = "color", value = value,
-    oninput = "\"this.setAttribute('value',this.value);\"", p ...,
+    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
     args ...)::Component{:input}
-end
-
-function progress(name::String, ps::Pair{String, String} ...; args ...)
-    Component(name, "progress", ps..., args ...)
 end
 
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
@@ -287,25 +313,16 @@ function keyinput(name::String, p::Pair{String, <:Any} ...; text = "w", args ...
 end
 
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
-    newstyle = Style("$(s.name):$name")
-    [push!(newstyle.properties, p) for p in ps]
+    newstyle = Style("$(s.name):$name", ps ...)
     push!(s[:extras], newstyle)
 end
 
-(:)(s::Style, name::String) = s.extras[s.name * ":$name"]::AbstractComponent
+(:)(s::AbstractComponent, name::String) = s.properties[:extras][name]::AbstractComponent
 
-(:)(s::AbstractComponent, name::String) = s.extras[name]::AbstractComponent
-
-(:)(s::String, spairs::Vector{Pair{String, <:Any}} ...) = begin
-
-end
-
-(:)(s::Vector{String}, spairs::Vector{Pair{String, <:Any}} ...) = begin
-
-end
+(:)(s::String, spairs::Vector{Pair{String, <:Any}}) = Style(s, spairs ...)
 
 (:)(s::StyleComponent ...) = begin
-
+    Component{:sheet}(name, children = Vector{AbstractComponent}(s))
 end
 
 function (:)(sheet::Component{:sheet}, s::StyleComponent ...)
@@ -337,6 +354,7 @@ const cm = WebMeasure{:cm}()
 # relative size
 const percent = WebMeasure{:%}()
 const per = WebMeasure{:%}()
+const perc = WebMeasure{:%}()
 const em = WebMeasure{:em}()
 # time
 const seconds = WebMeasure{:s}()
@@ -360,7 +378,7 @@ const to = "to"
 
 
 translateX(s::String) = "translateX($s)"
-translateY(s::String) = "translateX($s)"
+translateY(s::String) = "translateY($s)"
 rotate(s::String) = "rotate($s)"
 matrix(n::Int64 ...) = "matrix(" * join([string(i) for i in n], ", ") * ")"
 translate(x::String, y::String) = "translate()"

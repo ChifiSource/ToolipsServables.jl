@@ -88,13 +88,11 @@ function htmlcomponent(s::String, readonly::Vector{String})
     end for compname in readonly]))::Vector{Component{<:Any}}
 end
 
-componenthtml(comps::Vector{<:AbstractComponent}) = begin
+componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
+
+componentcss(comps::Vector{<:StyleComponent}) = begin
 
 end
-
-componenthtml(comps::Vector{Component{<:Any}}) = join([string(comp) for comp in comps])
-
-componentcss(comps::Vector{<:StyleComponent}) = join([string(comp) for comp in comps])
 
 md_string(comp::Component{<:Any}) = comp[:text]
 md_string(comp::Component{:h1}) = "# $(comp[:text])\n"
@@ -104,18 +102,39 @@ md_string(comp::Component{:h4}) = "#### $(comp[:text])\n"
 md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
 md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
 md_string(comp::Component{:hr}) = "---\n"
+md_string(comp::Component{:code}) = begin
+    "```\n$(comp[:text])\n```"
+end
+md_string(comp::Component{:b}) = "**\n$(comp[:text])\n**"
+md_string(comp::Component{:i}) = "*\n$(comp[:text])\n*"
 
 function mdcomponent(s::String)
     lines = split(s, "\n")
     comps::Vector{Component} = Vector{Component}()
     line = 1
     while true
+        if curr_line > length(line)
+            break
+        end
         curr_line = lines[line]
-        if length(lines)
-        continue
+        if length(lines[line]) == 0
+            break
+        elseif length(lines) == 1 && lines[1] == "\n"
+            continue
+        elseif curr_line[1] == "#"
+        elseif curr_line[1] == "-"
+        elseif curr_line[1] == "`"
+        elseif curr_line[1] == "\\"
+        end
+        if contains(curr_line, "*")
+
+        end
+        if contains(curr_line, "`")
+
+        end
+        line += 1s
     end
 end
-
 
 function componentmd(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]

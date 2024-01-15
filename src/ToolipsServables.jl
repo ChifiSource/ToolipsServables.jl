@@ -133,6 +133,7 @@ style!(gobutton, leavebutton)
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
+using Base64
 
 """
 ```julia
@@ -293,7 +294,35 @@ function delete!(name::String, v::Vector{<:AbstractComponent})::Nothing
 end
 
 """
+```julia
+Component{T <: Any} <: AbstractComponent <: Servable
+```
+- name**::String**
+- properties**::Dict{Symbol, Any}**
+- tag**::String**
 
+The `Component` is the `ToolipsServables` structure for representing an `HTML` element.
+Components may be indexed using both strings and symbols; they are typed to their element name, 
+but the `tag` field will be the element tag written. Components may be composed with `push!` and 
+`set_children!`, styled with `style!`, and are written to a `Connection` with `write!`.
+
+`Components` initialize with a few special properties (if they are not provided); `:text`, `:children`, and `:extras`.
+- :extras are written before the `Component`.
+- :children are written inside of the `Component`.
+- :text is also written inside of the `Component`.
+Components are usually constructed through high-level constants, which are calls to the 
+`Component{T}(name::String = "-", properties ...; args ...)` constructor.
+
+- See also: `templating`, `StyleComponent`, `AbstractComponent`, `elements`, `arguments`
+```julia
+Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any}
+Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
+Component(tag::String, name::String, props::Any ...; args ...)
+```
+---
+```example
+
+```
 """
 mutable struct Component{T <: Any} <: AbstractComponent
     name::String
@@ -314,7 +343,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
     end
     function Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
         properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
-        (push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args)
+        [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
         Component{T}(name,  string(T), properties)::Component{T}
     end
     function Component(tag::String, name::String, props::Any ...; args ...)
@@ -325,8 +354,19 @@ end
 getindex(s::AbstractComponent, symb::Symbol) = s.properties[symb]
 getindex(s::AbstractComponent, symb::String) = s.properties[Symbol(symb)]
 
-setindex!(s::AbstractComponent, a::Any, symb::Symbol) = s.properties[symb]::typeof(a) = a
-setindex!(s::AbstractComponent, a::Any, symb::String) = s.properties[Symbol(symb)]::typeof(a) = a
+setindex!(s::AbstractComponent, a::Any, symb::Symbol) = begin
+    if symb in keys(s.properties)
+        return(s.properties[Symbol(symb)]::typeof(a) = a)
+    end
+    push!(s.properties, symb => a)
+end
+
+setindex!(s::AbstractComponent, a::Any, symb::String) = begin
+    if Symbol(symb) in keys(s.properties)
+        return(s.properties[Symbol(symb)]::typeof(a) = a)
+    end
+    push!(s.properties, Symbol(symb) => a)
+end
 
 function propstring(properties::Dict{Symbol, Any})::String
     notupe::Tuple{Symbol, Symbol, Symbol} = (:text, :children, :extras)
@@ -425,9 +465,11 @@ end
 string(comp::Style) = begin
     properties = comp.properties
     name = comp.name
-    extras = join([string(comp) for comp in properties[:extras]])
-    delete!(properties, :extras)
-    "$(extras) <style id=$name>$name {$(join(["$(p[1]):$(p[2])" for p in properties]));}</style>"
+    extras = ""
+    if :extras in keys(properties)
+        extras = join([string(comp) for comp in properties[:extras]])
+    end
+    "$(extras) <style id=$name>$name {$(join(["$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)], ";"));}</style>"
 end
 
 """
@@ -479,12 +521,12 @@ include("templating.jl")
 include("componentio.jl")
 
 
-export px, pt, per, s, ms, deg, turn
-export rgba, translate, matrix, skew, rotate, scale
-export Servable, Component, AbstractComponent, File, write!
-export animate!, style!
+export px, pt, per, s, ms, deg, turn, perc
+export rgba, translate, matrix, skew, rotate, scale, translateY, translateX
+export Servable, Component, AbstractComponent, File, write!, Style
+export style!, seconds, percent, set_children!
 export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
 export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6
 export element, label, script, nav, button, form, section, body, header, footer, b
-export source, audio, video, table, tr, th, td
+export source, audio, video, table, tr, th, td, style
 end # module ToolipsServables
