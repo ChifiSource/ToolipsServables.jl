@@ -30,7 +30,7 @@ style!(gobutton, leavebutton)
 # components can be written to <: IO or `Strings` with `write!`
 ```
 ###### servable base
-- abstract type `Servable`` end
+- abstract type `Servable` end
 - `File` <: `Servable`
 - `AbstractComponent` <: `Servable`
 - `Component{T <: Any}` <: `AbstractComponent`
@@ -161,7 +161,7 @@ const Servables{T} = Vector{T} where {T <: Servable}
 
 string(s::Servable) = s.name::String
 
-string(s::Servables) = join([string(serv) for serv in s])
+string(s::Servables) = join(string(serv) for serv in s)
 
 """
 ```julia
@@ -187,16 +187,22 @@ mycomp = div("example", align = "center")
 write!(buff, mycomp)
 str_sample = write!(str_sample, mycomp)
 ```
+```example
+# writing a file
+file::File{:txt} = File("texts/example.txt")
+
+rawfile = write!("", file)
+```
 """
 function write! end
 
 function write!(io::IO, servables::Servable ...)
-    write(io, join([string(serv) for serv in servables]))
+    write(io, join(string(serv) for serv in servables))
     nothing
 end
 
 function write!(io::String, servables::Servable ...)
-    io = io * join([string(serv) for serv in servables])
+    io = io * join(string(serv) for serv in servables)
 end
 
 function getindex(vs::Vector{<:Servable}, n::String)
@@ -204,7 +210,8 @@ function getindex(vs::Vector{<:Servable}, n::String)
     if ~(isnothing(f))
         return(vec[f])::Servable
     end
-    println("component $name not in $(join([comp.name for comp in vec], "| "))")
+    inside = join((comp.name for comp in vec), "| ")
+    println("component $name not in $inside")
     throw(KeyError(name))
 end
 
@@ -227,7 +234,7 @@ File(`dir`**::String**)
 io = IOBuffer()
 
 # make a file
-myf = File("myfiles/example")
+myf::File{:jl} = File("myfiles/example.jl")
 # writing
 write!(io, myf)
 ```
@@ -258,8 +265,6 @@ end
 """
 ### abstract type AbstractComponent <: Servable
 Components are html elements, 
-### Consistencies
-- properties**::Dict{Symbol, Any}**
 ##### consistencies
 - `name`**::String**
 - `string(**::AbstractComponent**)`
@@ -268,7 +273,7 @@ Components are html elements,
 """
 abstract type AbstractComponent <: Servable end
 
-string(s::Vector{<:AbstractComponent}) = join([string(serv) for serv in s])
+string(s::Vector{<:AbstractComponent}) = join(string(serv) for serv in s)
 
 function in(name::String, v::Vector{<:AbstractComponent})
     pos = findfirst(c::AbstractComponent -> c.name == name, pos)
@@ -280,7 +285,7 @@ function getindex(vec::Vector{<:AbstractComponent}, name::String)::AbstractCompo
     if ~(isnothing(f))
         return(vec[f])::AbstractComponent
     end
-    println("component $name not in $(join([comp.name for comp in vec], "| "))")
+    println("component $name not in $vec")
     throw(KeyError(name))
 end
 
@@ -321,7 +326,19 @@ Component(tag::String, name::String, props::Any ...; args ...)
 ```
 ---
 ```example
+# creating components
+myd::Component{:div} = div("example", text = "hello world!")
 
+myheading::Component{:h1} = h1("myheading", text = "example")
+
+elements::Vector{<:AbstractComponent} = [p("example", text = e) for e in 1:10]
+
+# composing components
+style!(myheading, "color" => "white", "font-size" => 10pt)
+push!(myd, myheading)
+set_children!(myheading, elements)
+# writing components
+write!(c, myd)
 ```
 """
 mutable struct Component{T <: Any} <: AbstractComponent
@@ -370,9 +387,9 @@ end
 
 function propstring(properties::Dict{Symbol, Any})::String
     notupe::Tuple{Symbol, Symbol, Symbol} = (:text, :children, :extras)
-   join([begin
+   join((begin
         "$(prop[1])=\"$(prop[2])\"" 
-    end for prop in filter(c -> ~(c[1] in notupe), properties)], " ")
+    end for prop in filter(c -> ~(c[1] in notupe), properties)), " ")
 end
 
 string(comp::Component{<:Any}) = begin
@@ -383,28 +400,26 @@ string(comp::Component{<:Any}) = begin
 end
 
 function copy(c::Component{<:Any})
-    comp = Component(name, tag, copy(c.properties))
+    comp = Component(c.name, c.tag, copy(c.properties))
     comp
 end
 
 """
-
+### abstract type StyleComponent <: AbstractComponent
+StyleComponents are components which can be written inside of a `Component{:style}` (CSS styles). 
+For base `ToolipsServables`, this includes the parametric `Animation` type and `Style` type. These carry 
+the same consistencies as a `Component`, but don't hold a `tag`.
+##### consistencies
+- `name`**::String**
+- `string(**::AbstractComponent**)`
+- `properties**::Dict{Symbol, <:Any}**`
+```
+- See also: `style!`, `style`, `AbstractAnimation`, `keyframes`, `Component`, `templating`, `style_properties`
 """
 abstract type StyleComponent <: AbstractComponent end
 
-"""
-```julia
-copy(c::AbstractComponent) -> ::AbstractComponent
-```
-------------------
-Copies c.
-#### example
-```
-c = p("myp")
-t = copy!(c)
-```
-"""
-function copy(c::StyleComponent)
+function copy(c::Style)
+    Style(c.name, copy(c.properties) ...)
 end
 
 
@@ -413,9 +428,8 @@ end
 Style <: StyleComponent
 ```
 - name::String
-- f::Function
-- properties::Dict{Any, Any}
-- extras::Vector{Servable}
+- properties::Dict{Symbol, Any}
+
 
 Styles hold and translate CSS styling pairs. For example, a default h1 style would
 be named "h1". A heading style for a specific class should be "h1.myheading". A 
@@ -428,6 +442,7 @@ create new styles.
 ##### constructors
 - Style(name::String; props ...)
 ---
+- There is a canonical method for `style` which can be used similarly to other `Component` templating methods (without key-word arguments).
 ```julia
 style(name::String, stylepairs::Pair{String, <:Any}) -> Style
 ```
@@ -467,16 +482,29 @@ string(comp::Style) = begin
     name = comp.name
     extras = ""
     if :extras in keys(properties)
-        extras = join([string(comp) for comp in properties[:extras]])
+        extras = join(string(comp) for comp in properties[:extras])
     end
-    "$(extras) <style id=$name>$name {$(join(["$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)], ";"));}</style>"
+    spairs = join(("$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)), ";")
+    "$(extras) <style id=$name>$name {$(spairs);}</style>"
 end
 
 """
+### abstract type AbstractAnimation <: StyleComponent
+Animations are changes to the style of components that happen to the screen over time.
+Toolips provides parametric anaimations that are intended to be used through high-level methods.
+##### consistencies
+- `name`**::String**
+- `string(**::AbstractAnimation**)`
+- `properties**::Dict{Symbol, <:Any}**`
+```
+- See also: `Animation`, `keyframes`, `style!`, `style`, `StyleComponent`
 """
 abstract type AbstractAnimation <: StyleComponent end
 
 """
+```julia
+Animation{T <: Any} <: AbstractAnimation
+```
 
 """
 mutable struct Animation{T <: Any} <: AbstractAnimation
@@ -491,7 +519,7 @@ end
 
 function string(anim::Animation{:keyframes})
     properties = anim.properties
-    props::String = join(["$(p[1]):$(p[2])" for p in properties], ";")
+    props::String = join(("$(p[1]):$(p[2])" for p in properties), ";")
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
 
@@ -514,7 +542,7 @@ show(io::IO, m::MIME"text/html", s::Servable) = begin
 end
 
 show(io::IO, m::MIME"text/html", s::Vector{<:AbstractComponent}) = begin
-    show(io, join([string(comp) for comp in s]))
+    show(io, join(string(comp) for comp in s))
 end
 
 include("templating.jl")
@@ -528,5 +556,5 @@ export style!, seconds, percent, set_children!
 export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
 export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6
 export element, label, script, nav, button, form, section, body, header, footer, b
-export source, audio, video, table, tr, th, td, style
+export source, audio, video, table, tr, th, td, style, textdiv
 end # module ToolipsServables
