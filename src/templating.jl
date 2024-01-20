@@ -1,12 +1,115 @@
 
+"""
+##### toolips servables HTML templating
+`Component` templating revolves primarily around the `Component` 
+and the `Style` with additional functionality being provided through the 
+`File` and `Animation` `Servables`. Components are created via **element constants**. 
+For a full list of these elements, use `?(elements)`. When constructing from 
+one of these tag names, the first positional argument will always be a name. 
+From here, some components *do* have separate arguments they can take but 
+for the most part any argument can be provided in the form of a `Pair` or 
+a key-word argument.
+```julia
+mycomp::Component{:div} = div("example-name", text = "hello world!", align = "center")
+```
+The following functions are used to compose components:
+- `style!`
+- `push!`
+- `set_children!`
+- `add_to!`
+- `delete!`
+```julia
+mydiv = div("example", text = "sample")
+style!(mydiv, "background-color" => "purple", "border-radius" => 2px)
 
+child_comp = a("samplecomp")
+style!(child_comp, "color" => "blue")
+push!(mydiv, child_comps)
+
+childs = [b("samp\$(e)", text = e) for e in 1:5]
+
+set_children!(child_chomp, childs)
+
+delete!(childs["samp1"])
+```
+
+Components are indexable by both `Symbol` and `String`, this will retrieve stored 
+properties.
+- See also: `arguments`, `style_properties`, `elements`, `div`, `style`, `set_children!`, `push!`, `Style`
+"""
 const templating = nothing
 
+"""
+"""
 const style_properties = nothing
 
 const arguments = nothing
 
 """
+The following is a *comprehensive list of all component elements. Elements are called 
+with the first positional argument of a `String` and then infinite `Pair{String, <:Any}` and 
+key-word arguments.
+```example
+dv = div("name", align = "center", text = "hello!")
+```
+- See also: `templating`, `Component`, `arguments`, `div`, `body`, `a`, `measures`
+```julia
+- `img`
+- `link`
+- `meta`
+- `input`
+- `a`
+- `p`
+- `ul`
+- `li`
+- `br`
+- `i`
+- `i`
+- `title`
+- `span`
+- `iframe`
+- `svg`
+- `h1`
+- `h2`
+- `h3`
+- `h4`
+- `h5`
+- `h6`
+- `element`
+- `label`
+- `script`
+- `nav`
+- `button`
+- `form`
+- `section`
+- `body`
+- `header`
+- `footer`
+- `b`
+- `source`
+- `audio`
+- `video`
+- `tr`
+- `th`
+- `td`
+- `hr`
+- `progress`
+- `option`
+- `select`
+- `select(name::String, options::Vector{Servable}, p::Pair{String, <:Any} ...; args ...)`
+- `options(options::String ...)`
+- `base64img(name::String, raw::Any, filetype::String = "png")`
+- `textdiv`
+- `textbox`
+- `password`
+- `numberinput`
+- `rangeslider`
+- `checkbox`
+- `colorinput`
+- `cursor`
+- `context_menu!(menu::Component{<:Any})`
+- `keyinput`
+```
 """
 const elements = nothing
 
@@ -73,10 +176,21 @@ function select(name::String,  p::Pair{String, <:Any} ...; args ...)
     thedrop
 end
 
-function progress(name::String, ps::Pair{String, String} ...; args ...)
-    Component(name, "progress", ps...; args ...)
-end
+"""
+```julia
+base64img(name::String, raw::Any, filetype::String = "png", 
+p::Pair{String, Any} ...; args ...) -> Component{:img}
+```
+Constructs a `Component{:img}`, making the `src` a `Base64` 
+encoded version of the type `raw`. The `filetype` here is the `MIME` 
+that is to be encoded into `Base64`. `raw` can be any type binded to 
+`show` with this MIME -- a `Plot` from Plots.jl, or an `Image` from `Images`,
+for example.
+---
+```example
 
+```
+"""
 function base64img(name::String, raw::Any, filetype::String = "png",
     p::Pair{String, Any} ...; args ...)
     io = IOBuffer();
@@ -90,34 +204,39 @@ end
 
 push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
 
-add_to!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
-    comps = filter(c::Servable -> c <: Component{<:Any}, children)
-    noncomps = filter(c::Servable -> ~(c <: Component{<:Any}), children)
-    if length(noncomps) > 0
-        comp[:text] = comp[:text] * join([string(serv) for serv in noncomps])
-    end
+"""
+```julia
+add_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
+```
+`add_children!` is used to quickly concatenate additional children to the children 
+of a `Component`.
+- See also: `templating`, `set_children!`, `push!`, `Component`
+---
+```example
+
+```
+"""
+add_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
     if length(comps) > 0
         push!(comp.children, comps ...)
     end
 end
 
+"""
+```julia
+set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
+```
+`set_children!` sets the children of `comp` to `children`. Children can be accessed 
+by indexing `:children` on a `Component`.
+---
+```example
+
+```
+"""
 set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
     comp[:children] = Vector{AbstractComponent}(children)
 end
 
-style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
-
-function style!(sty::Style, anim::AbstractAnimation)
-
-end
-
-function style!(sty::Component{<:Any}, anim::AbstractAnimation)
-
-end
-
-"""
-
-"""
 const style = Style
 
 function style! end
@@ -133,6 +252,15 @@ function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
     nothing
 end
 
+style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+
+function style!(sty::Style, anim::AbstractAnimation)
+
+end
+
+function style!(sty::Component{<:Any}, anim::AbstractAnimation)
+
+end
 
 """
 """
@@ -141,23 +269,6 @@ function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay:
     KeyFrameAnimation(name, Dict(pairs ...))
 end
 
-"""
-**Defaults**
-### textdiv(name::String, p::Pair{String, Any} ...; text::String = "example", args ...)
-------------------
-A textdiv is a considerably advanced textbox. This includes an additional
-property -- to be read by a ComponentModifier -- called `rawtext`.
-#### example
-```
-route("/") do c::Connection
-    mytxtdiv = ToolipsDefaults.textdiv("mydiv")
-    on(c, mytxtdiv, "click") do cm::ComponentModifier
-        txtdiv_rawtxt = cm[mytxtdiv]["rawtext"]
-    end
-    write!(c, mytxtdiv)
-end
-```
-"""
 function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "example",
     args ...)
     raw = element("raw$name")

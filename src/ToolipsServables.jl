@@ -154,8 +154,11 @@ abstract type Servable end
 Servables{T} (alias for Vector{T} where {T <: Servable})
 ```
 `Servables` are able to be written to `IO` or a `String` using `write!`. Indexing a 
-set of `Servables` will grab a `Servable` by `name`
+`Vector` of `Servables` will grab a `Servable` by `name`
 - See also: `Servable`
+##### consistencies
+- `name`**::String**
+- `string(**::Servable**)`
 """
 const Servables{T} = Vector{T} where {T <: Servable}
 
@@ -413,23 +416,16 @@ the same consistencies as a `Component`, but don't hold a `tag`.
 - `name`**::String**
 - `string(**::AbstractComponent**)`
 - `properties**::Dict{Symbol, <:Any}**`
-```
 - See also: `style!`, `style`, `AbstractAnimation`, `keyframes`, `Component`, `templating`, `style_properties`
 """
 abstract type StyleComponent <: AbstractComponent end
 
-function copy(c::Style)
-    Style(c.name, copy(c.properties) ...)
-end
-
-
 """
 ```julia
-Style <: StyleComponent
+Style <: StyleComponent <: AbstractComponent <: Servable
 ```
 - name::String
 - properties::Dict{Symbol, Any}
-
 
 Styles hold and translate CSS styling pairs. For example, a default h1 style would
 be named "h1". A heading style for a specific class should be "h1.myheading". A 
@@ -448,8 +444,7 @@ style(name::String, stylepairs::Pair{String, <:Any}) -> Style
 ```
 A `Style` can be written using `write!`, and converted to a `String` using the `string` 
 function.
-------------------
-
+---
 ##### example
 ```julia
 # create a style
@@ -475,6 +470,10 @@ mutable struct Style <: StyleComponent
         end
         new(name, properties)::Style
     end
+end
+
+function copy(c::Style)
+    Style(c.name, copy(c.properties) ...)
 end
 
 string(comp::Style) = begin
@@ -503,9 +502,26 @@ abstract type AbstractAnimation <: StyleComponent end
 
 """
 ```julia
-Animation{T <: Any} <: AbstractAnimation
+Animation{T <: Any} <: AbstractAnimation <: StyleComponent ...
 ```
+- name**::String**
+- properties**::Dict{Symbol, Vector{String}}**
 
+The `Animation` is a parametric type meant to hold animation properties 
+for different types of animations. `ToolipsServables` provides one animation 
+type, `keyframes`, or `Animation{:keyframes}`. To construct it, use the 
+`keyframes` function. An `Animation` is then styled to a `style!` or 
+`Component` using `style!`.
+    
+- See also: `keyframes`, `style!`, `style`, `StyleComponent`, `templating`
+```julia
+Animation{T}(name::String, properties::Pair{String, <:Any} ...; delay::Any = 0.0, length::Any = 5.2,
+iterations::Integer = 1, keyargs ...)
+```
+---
+```example
+
+```
 """
 mutable struct Animation{T <: Any} <: AbstractAnimation
     name::String
