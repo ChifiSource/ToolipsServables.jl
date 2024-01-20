@@ -103,7 +103,13 @@ md_string(comp::Component{:code}) = begin
 end
 md_string(comp::Component{:b}) = "**\n$(comp[:text])\n**"
 md_string(comp::Component{:i}) = "*\n$(comp[:text])\n*"
-
+md_string(comp::Component{:a}) = begin
+    if :href in keys(comp.properties)
+        "[$(comp[:text])]($(comp[:href]))"
+    else
+        comp[:text]
+    end
+end
 
 function componentmd(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]

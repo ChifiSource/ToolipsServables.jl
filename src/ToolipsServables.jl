@@ -535,7 +535,7 @@ end
 
 function string(anim::Animation{:keyframes})
     properties = anim.properties
-    props::String = join(("$(p[1]):$(p[2])" for p in properties), ";")
+
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
 
@@ -563,7 +563,6 @@ end
 
 include("templating.jl")
 include("componentio.jl")
-
 
 export px, pt, per, s, ms, deg, turn, perc
 export rgba, translate, matrix, skew, rotate, scale, translateY, translateX

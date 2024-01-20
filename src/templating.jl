@@ -52,7 +52,7 @@ key-word arguments.
 ```example
 dv = div("name", align = "center", text = "hello!")
 ```
-- See also: `templating`, `Component`, `arguments`, `div`, `body`, `a`, `measures`
+- See also: `templating`, `Component`, `arguments`, `div`, `body`, `a`, `measures`, `DOCTYPE`
 ```julia
 - `img`
 - `link`
@@ -161,6 +161,8 @@ const hr = Component{:hr}
 const progress = Component{:progress}
 const option = Component{:option}
 
+"""
+"""
 function select(name::String, options::Vector{Servable}, p::Pair{String, <:Any} ...; args ...)
     thedrop = Component(name, "select", p ..., args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
@@ -168,6 +170,8 @@ function select(name::String, options::Vector{Servable}, p::Pair{String, <:Any} 
     thedrop
 end
 
+"""
+"""
 options(options::String ...) = Vector{AbstractComponent}()
 
 function select(name::String,  p::Pair{String, <:Any} ...; args ...)
@@ -264,9 +268,12 @@ end
 
 """
 """
-function keyframes(name::String, pairs::Pair{String, Vector{String}} ...; delay::Number, length::Number, 
-    iterations::Number)
-    KeyFrameAnimation(name, Dict(pairs ...))
+function keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...;
+    delay::Number, length::Number, iterations::Number)
+end
+
+function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
+
 end
 
 function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "example",
