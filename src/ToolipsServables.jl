@@ -484,7 +484,7 @@ string(comp::Style) = begin
         extras = join(string(comp) for comp in properties[:extras])
     end
     spairs = join(("$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)), ";")
-    "$(extras) <style id=$name>$name {$(spairs);}</style>"
+    "$(extras) <style id=\"$name\">$name {$(spairs);}</style>"
 end
 
 """
@@ -525,17 +525,18 @@ iterations::Integer = 1, keyargs ...)
 """
 mutable struct Animation{T <: Any} <: AbstractAnimation
     name::String
-    properties::Dict{Symbol, Vector{String}}
-    function Animation{T}(name::String, properties::Pair{String, <:Any} ...; 
-        delay::Any = 0.0, length::Any = 5.2, iterations::Integer = 1, keyargs ...) where {T <: Any}
-        properties::Dict{Symbol, String} = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+    properties::Dict{String, Vector{String}}
+    function Animation{T}(name::String) where {T <: Any}
+        properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}()
         new(name, properties)
     end
 end
 
 function string(anim::Animation{:keyframes})
     properties = anim.properties
-
+    props = join(begin
+        
+    end for prop in properties)
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
 

@@ -114,7 +114,17 @@ dv = div("name", align = "center", text = "hello!")
 const elements = nothing
 
 """
+```julia
+DOCTYPE() -> ::String
+```
+In cases which utilize minimal HTML, it might be necessary to write the document 
+type to the page. In this case, simply write the return of this `Function` to your `IO`.
+---
+```example
+io = IOBuffer()
 
+write!(io, DOCTYPE())
+```
 """
 DOCTYPE() = "<!DOCTYPE html>"
 
@@ -162,8 +172,16 @@ const progress = Component{:progress}
 const option = Component{:option}
 
 """
+```julia
+select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...)
+```
+Creates a combobox components from options `options`. 
+---
+```example
+
+```
 """
-function select(name::String, options::Vector{Servable}, p::Pair{String, <:Any} ...; args ...)
+function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
     thedrop = Component(name, "select", p ..., args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
     thedrop[:children] = options
