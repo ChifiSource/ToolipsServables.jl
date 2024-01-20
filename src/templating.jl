@@ -175,10 +175,16 @@ const option = Component{:option}
 ```julia
 select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...)
 ```
-Creates a combobox components from options `options`. 
+Creates a combobox components from a `Vector` of options. This provides 
+a quick way to make a selection combobox using the 
+`options(names::String ...)` Method and providing the return as the second 
+positional argument to this `select` method. Both of these Components may also 
+be constructed normally.
 ---
 ```example
+myopts = options("emmy", "henry", "jessica")
 
+mysel = select("mainselect", myopts, value = "henry")
 ```
 """
 function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
@@ -261,6 +267,28 @@ end
 
 const style = Style
 
+
+"""
+```julia
+style!(::AbstractComponent, ...) -> ::Nothing
+```
+`style!` is used to mutate the style of components and style components 
+using CSS pairs, or in the case of components using a `Style` or `Animation`. 
+`style!` will take a component followed by what to style that component with. 
+This can be an infinite list of properties and values, the keys must be strings, 
+(`?style_properties`) or a `Style`/`Animation`.
+```julia
+style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...)
+style!(comp::Component{<:Any}, sty::Style)
+style!(sty::Style, anim::AbstractAnimation)
+style!(comp::Component{<:Any}, anim::AbstractAnimation)
+```
+---
+```example
+
+```
+"""
 function style! end
 
 function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
@@ -280,14 +308,25 @@ function style!(sty::Style, anim::AbstractAnimation)
 
 end
 
-function style!(sty::Component{<:Any}, anim::AbstractAnimation)
+function style!(comp::Component{<:Any}, anim::AbstractAnimation)
+
+end
+
+function style!(comp::Component{<:Any}, sty::Style)
 
 end
 
 """
+```julia
+keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...)
+```
+
+---
+```example
+
+```
 """
-function keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...;
-    delay::Number, length::Number, iterations::Number)
+function keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...)
 end
 
 function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
@@ -419,7 +458,46 @@ mutable struct WebMeasure{format} end
 
 """
 ###### measures
+`ToolipsServables` includes a number of *measurement constants* which 
+help to facilitate high-level syntax. This includes a number of different 
+constants which are applicable in a variety of different contexts. These measurement 
+units are meant to be provided after a number.
+```example
+```
+Here is a comprehensive list of measures for each application:
+```julia
+# size
+px
+pt
+inch
+pc
+mm
+cm
+# relative size
+perc, per, percent
+em
+# time
+seconds, s
+ms
+# angles
+deg
+turn
 
+# animation
+to
+from
+perc, per, percent
+
+# transforms, colors
+rgba
+translateX
+translateY
+rotate
+matrix
+skey
+translate
+scale
+```
 """
 const measures = WebMeasure{:measure}()
 # size
@@ -446,12 +524,8 @@ function rgba(r::Number, g::Number, b::Number, a::Float64)
     "rgb($r $g $b $a / a)"
 end
 
-"""
-"""
 const from = "from"
 
-"""
-"""
 const to = "to"
 
 
