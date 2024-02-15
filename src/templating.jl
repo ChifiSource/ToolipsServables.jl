@@ -191,7 +191,7 @@ function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{Stri
     thedrop = Component(name, "select", p ..., args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
     thedrop[:children] = options
-    thedrop
+    thedrop::Component{:select}
 end
 
 """
@@ -201,7 +201,7 @@ options(options::String ...) = Vector{AbstractComponent}()
 function select(name::String,  p::Pair{String, <:Any} ...; args ...)
     thedrop = Component(name, "select", p ...; args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
-    thedrop
+    thedrop::Component{:select}
 end
 
 """
@@ -318,15 +318,23 @@ end
 
 """
 ```julia
-keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...)
+keyframes(name::String) -> ::Animation{:keyframes}
 ```
-
+Constructs a `:keyframes` `Animation`, which can have frames added with `keyframes!`. To `keyframes!` we provide, 
+`to`, `from`, or a percentage with style pairs to create an animation.
 ---
 ```example
+frames = keyframes()
 
+keyframes!(frames, from, "opacity" => 0percent)
+keyframes!(frames, to, "opacity" => 100percent)
+# we may now use `style!`, making sure to `write!` our `Animation` to the `Connection`.
+mycomp = h2("heading", text = "this text fades in")
+
+style!(mycomp, frames)
 ```
 """
-function keyframes(name::String, init::String, spairs::Pair{String, <:Any} ...)
+function keyframes(name::String)
 end
 
 function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
@@ -499,7 +507,7 @@ translate
 scale
 ```
 """
-const measures = WebMeasure{:measure}()
+const measures = WebMeasure
 # size
 const px = WebMeasure{:px}()
 const pt = WebMeasure{:pt}()

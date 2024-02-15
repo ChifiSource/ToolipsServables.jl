@@ -130,6 +130,10 @@ style!(gobutton, leavebutton)
   - `scale(n::Any)`
   - `scale(n::Any, n2::Any)`
 - **io**
+  - `htmlcomponent`
+  - `componenthtml`
+  - `md_string`
+  - `componentmd`
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
@@ -250,7 +254,7 @@ mutable struct File{T <: Any} <: Servable
         ftsplit = split(dir, ".")
         fending = join(ftsplit[2:length(ftsplit)])
         nsplit = split(dir, "/")
-        new{:}(string(nsplit[length(nsplit)]), join(nsplit[1:length(nsplit) - 1], "/"))::File
+        new{Symbol(fending)}(string(nsplit[length(nsplit)]), join(nsplit[1:length(nsplit) - 1], "/"))::File
     end
 end
 
@@ -505,7 +509,7 @@ abstract type AbstractAnimation <: StyleComponent end
 Animation{T <: Any} <: AbstractAnimation <: StyleComponent ...
 ```
 - name**::String**
-- properties**::Dict{Symbol, Vector{String}}**
+- properties**::Dict{String, Vector{String}}**
 
 The `Animation` is a parametric type meant to hold animation properties 
 for different types of animations. `ToolipsServables` provides one animation 
@@ -535,7 +539,8 @@ end
 function string(anim::Animation{:keyframes})
     properties = anim.properties
     props = join(begin
-        
+        step = join(("$(p[1]):$(p[2])" for p in prop[2]), ";")
+        "$(prop[1]) {$(step)}"
     end for prop in properties)
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
