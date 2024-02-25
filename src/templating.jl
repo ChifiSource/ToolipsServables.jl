@@ -16,7 +16,6 @@ The following functions are used to compose components:
 - `style!`
 - `push!`
 - `set_children!`
-- `add_to!`
 - `delete!`
 ```julia
 mydiv = div("example", text = "sample")
@@ -195,8 +194,18 @@ function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{Stri
 end
 
 """
+```julia
+options
+```
+Provide `options` to a `select` to make a dropbox very quickly.
+---
+```example
+myopts = options("emmy", "henry", "jessica")
+
+mysel = select("mainselect", myopts, value = "henry")
+```
 """
-options(options::String ...) = Vector{AbstractComponent}()
+options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt) for opt in options])
 
 function select(name::String,  p::Pair{String, <:Any} ...; args ...)
     thedrop = Component(name, "select", p ...; args ...)
@@ -204,51 +213,7 @@ function select(name::String,  p::Pair{String, <:Any} ...; args ...)
     thedrop::Component{:select}
 end
 
-"""
-```julia
-base64img(name::String, raw::Any, filetype::String = "png", 
-p::Pair{String, Any} ...; args ...) -> Component{:img}
-```
-Constructs a `Component{:img}`, making the `src` a `Base64` 
-encoded version of the type `raw`. The `filetype` here is the `MIME` 
-that is to be encoded into `Base64`. `raw` can be any type binded to 
-`show` with this MIME -- a `Plot` from Plots.jl, or an `Image` from `Images`,
-for example.
----
-```example
-
-```
-"""
-function base64img(name::String, raw::Any, filetype::String = "png",
-    p::Pair{String, Any} ...; args ...)
-    io = IOBuffer();
-    b64 = Base64.Base64EncodePipe(io)
-    show(b64, "image/$filetype", raw)
-    close(b64)
-    mysrc = String(io.data)
-    img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
-    args ...)::Component{:img}
-end
-
 push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
-
-"""
-```julia
-add_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
-```
-`add_children!` is used to quickly concatenate additional children to the children 
-of a `Component`.
-- See also: `templating`, `set_children!`, `push!`, `Component`
----
-```example
-
-```
-"""
-add_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
-    if length(comps) > 0
-        push!(comp.children, comps ...)
-    end
-end
 
 """
 ```julia
@@ -284,6 +249,7 @@ style!(comp::Component{<:Any}, sty::Style)
 style!(sty::Style, anim::AbstractAnimation)
 style!(comp::Component{<:Any}, anim::AbstractAnimation)
 ```
+- See also: `keyframes`, `set_children!`, `style!`, `templating`, `measures`
 ---
 ```example
 
@@ -328,7 +294,7 @@ frames = keyframes()
 
 keyframes!(frames, from, "opacity" => 0percent)
 keyframes!(frames, to, "opacity" => 100percent)
-# we may now use `style!`, making sure to `write!` our `Animation` to the `Connection`.
+# we may now use `style!`, making sure to `write!` our `Animation` as it is a `StyleComponent`.
 mycomp = h2("heading", text = "this text fades in")
 
 style!(mycomp, frames)
@@ -339,6 +305,40 @@ end
 
 function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
 
+end
+
+"""
+```julia
+base64img(name::String, raw::Any, filetype::String = "png", 
+p::Pair{String, Any} ...; args ...) -> Component{:img}
+```
+Constructs a `Component{:img}`, making the `src` a `Base64` 
+encoded version of the type `raw`. The `filetype` here is the `MIME` 
+that is to be encoded into `Base64`. `raw` can be any type binded to 
+`show` with this MIME -- a `Plot` from Plots.jl, or an `Image` from `Images`,
+for example.
+---
+```example
+using Plots
+using ToolipsServables
+
+plt = plot([5, 10, 12, 13], [4, 3, 1, 88])
+img = base64img("myplot", plt)
+# uses show(::IO, mime "image/**filetype**", ::Any) where `Any` is `plt`
+
+o = IOBuffer()
+write!(o, img)
+```
+"""
+function base64img(name::String, raw::Any, filetype::String = "png",
+    p::Pair{String, Any} ...; args ...)
+    io = IOBuffer();
+    b64 = Base64.Base64EncodePipe(io)
+    show(b64, "image/$filetype", raw)
+    close(b64)
+    mysrc = String(io.data)
+    img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
+    args ...)::Component{:img}
 end
 
 function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "example",

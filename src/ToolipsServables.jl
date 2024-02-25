@@ -271,7 +271,8 @@ end
 
 """
 ### abstract type AbstractComponent <: Servable
-Components are html elements, 
+Components are html elements or CSS classes. 
+- See also: `Component`, `Servable`, `StyleComponent`, `style!`
 ##### consistencies
 - `name`**::String**
 - `string(**::AbstractComponent**)`
@@ -333,6 +334,8 @@ Component(tag::String, name::String, props::Any ...; args ...)
 ```
 ---
 ```example
+using ToolipsServables
+# using Toolips.Components
 # creating components
 myd::Component{:div} = div("example", text = "hello world!")
 
@@ -345,6 +348,12 @@ style!(myheading, "color" => "white", "font-size" => 10pt)
 push!(myd, myheading)
 set_children!(myheading, elements)
 # writing components
+buff = IOBuffer()
+write!(buff, myd)
+str = ""
+write!(str, myd)
+using Toolips
+c = Toolips.SpoofConnection()
 write!(c, myd)
 ```
 """
@@ -524,7 +533,10 @@ iterations::Integer = 1, keyargs ...)
 ```
 ---
 ```example
-
+a = keyframes("fadein")
+keyframes!(a, 0percent, "opacity" => 0percent)
+keyframes!(a, 100percent, "opacity" => 100percent)
+a
 ```
 """
 mutable struct Animation{T <: Any} <: AbstractAnimation
