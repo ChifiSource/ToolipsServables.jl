@@ -36,13 +36,12 @@ Components are indexable by both `Symbol` and `String`, this will retrieve store
 properties.
 - See also: `arguments`, `style_properties`, `elements`, `div`, `style`, `set_children!`, `push!`, `Style`
 """
-const templating = nothing
-
+const templating = 1
 """
 """
-const style_properties = nothing
+const style_properties = 1
 
-const arguments = nothing
+const arguments = 1
 
 """
 The following is a *comprehensive list of all component elements. Elements are called 
@@ -110,7 +109,7 @@ dv = div("name", align = "center", text = "hello!")
 - `keyinput`
 ```
 """
-const elements = nothing
+const elements = 1
 
 """
 ```julia
@@ -170,50 +169,7 @@ const hr = Component{:hr}
 const progress = Component{:progress}
 const option = Component{:option}
 
-"""
-```julia
-select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...)
-```
-Creates a combobox components from a `Vector` of options. This provides 
-a quick way to make a selection combobox using the 
-`options(names::String ...)` Method and providing the return as the second 
-positional argument to this `select` method. Both of these Components may also 
-be constructed normally.
----
-```example
-myopts = options("emmy", "henry", "jessica")
-
-mysel = select("mainselect", myopts, value = "henry")
-```
-"""
-function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component(name, "select", p ..., args ...)
-    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
-    thedrop[:children] = options
-    thedrop::Component{:select}
-end
-
-"""
-```julia
-options
-```
-Provide `options` to a `select` to make a dropbox very quickly.
----
-```example
-myopts = options("emmy", "henry", "jessica")
-
-mysel = select("mainselect", myopts, value = "henry")
-```
-"""
-options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt) for opt in options])
-
-function select(name::String,  p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component(name, "select", p ...; args ...)
-    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
-    thedrop::Component{:select}
-end
-
-push!(s::AbstractComponent, d::AbstractComponent ...) = [push!(s[:children], c) for c in d]
+push!(s::AbstractComponent, d::AbstractComponent ...) = push!(s[:children], d ...)
 
 """
 ```julia
@@ -252,7 +208,12 @@ style!(comp::Component{<:Any}, anim::AbstractAnimation)
 - See also: `keyframes`, `set_children!`, `style!`, `templating`, `measures`
 ---
 ```example
+mycomp = div("mysample", text = "hello world!")
+style!(mycomp, "display" => "inline-block", "background-color" => "black")
 
+myclass = style("div.sample", "color" => "white")
+
+style!(mycomp, myclass)
 ```
 """
 function style! end
@@ -309,6 +270,49 @@ end
 
 """
 ```julia
+select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...)
+```
+Creates a combobox components from a `Vector` of options. This provides 
+a quick way to make a selection combobox using the 
+`options(names::String ...)` Method and providing the return as the second 
+positional argument to this `select` method. Both of these Components may also 
+be constructed normally.
+---
+```example
+myopts = options("emmy", "henry", "jessica")
+
+mysel = select("mainselect", myopts, value = "henry")
+```
+"""
+function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
+    thedrop = Component(name, "select", p ..., args ...)
+    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop[:children] = options
+    thedrop::Component{:select}
+end
+
+"""
+```julia
+options(options::String ...s)
+```
+Provide `options` to a `select` to make a dropbox very quickly.
+---
+```example
+myopts = options("emmy", "henry", "jessica")
+
+mysel = select("mainselect", myopts, value = "henry")
+```
+"""
+options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt) for opt in options])
+
+function select(name::String,  p::Pair{String, <:Any} ...; args ...)
+    thedrop = Component(name, "select", p ...; args ...)
+    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop::Component{:select}
+end
+
+"""
+```julia
 base64img(name::String, raw::Any, filetype::String = "png", 
 p::Pair{String, Any} ...; args ...) -> Component{:img}
 ```
@@ -341,7 +345,7 @@ function base64img(name::String, raw::Any, filetype::String = "png",
     args ...)::Component{:img}
 end
 
-function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "example",
+function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     args ...)
     raw = element("raw$name")
     style!(raw, "display" => "none")
@@ -403,18 +407,28 @@ end
 
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
     cursor_updater = script(name, p ..., args ...)
-    cursor_updater["x"] = "1"
-    cursor_updater["y"] = "1"
+    cursor_updater["x"], cursor_updater["y"] = 1, 1
     cursor_updater[:text] = """
     function updatecursor(event) {
         document.getElementById("$name").setAttribute("x", event.clientX);
-        document.getElementById("$name").setAttribute("y", event.clientY);
-    }
+        document.getElementById("$name").setAttribute("y", event.clientY);}
     document.getElementsByTagName("body")[0].addEventListener("mousemove", updatecursor);
    """
    cursor_updater::Component{:script}
 end
 
+"""
+```julia
+context_menu!(menu::Component{<:Any}) -> ::Component{:script}
+```
+Makes your `Component` a context menu -- a menu that appears when the page is right-clicked.
+Note that this creates the same context menu across the page. If we wanted to right click individual items, 
+we might instead `append!` something using a `ComponentModifier`. 
+---
+```example
+
+```
+"""
 function context_menu!(menu::Component{<:Any})
     name = menu.name
     scr = script("$name-script", text = """
@@ -426,7 +440,7 @@ const scope = document.querySelector("body");
     document.getElementById("$name").style.left = `\${mouseX}px`;
     document.getElementById("$name").style["opacity"] = 100;
     });""")
-    push!(menu.extras, scr)
+    push!(menu[:extras], scr)
     style!(menu, "opacity" => 0percent, "position" => "absolute")
     menu::Component{<:Any}
 end
@@ -451,12 +465,10 @@ end
 end
 
 function (:)(sheet::Component{:sheet}, s::StyleComponent ...)
-
+    sheet[:children] = vcat(sheet[:children], Vector{AbstractComponent}([comp for comp in s]))
 end
 
-function (:)(sheet::Component{:sheet}, s::String, vec::Vector{Pair{String, String}})
-
-end
+(:)(sheet::Component{:sheet}, s::String, vec::Vector{Pair{String, String}}) = push!(sheet[:children], Style(s, vec ...))
 
 
 
@@ -471,6 +483,9 @@ help to facilitate high-level syntax. This includes a number of different
 constants which are applicable in a variety of different contexts. These measurement 
 units are meant to be provided after a number.
 ```example
+mybutton = button("example-button", text = "press me!")
+
+style!(mybutton, "font-size" => 22pt, "border-radius" => 5px, "transition" => 800ms)
 ```
 Here is a comprehensive list of measures for each application:
 ```julia

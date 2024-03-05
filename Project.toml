@@ -2,3 +2,12 @@ name = "ToolipsServables"
 uuid = "bf3a9e68-ca66-4981-8178-9d71c4f8abaa"
 authors = ["emmac <emmacboudreau@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
