@@ -539,11 +539,14 @@ keyframes!(a, 100percent, "opacity" => 100percent)
 a
 ```
 """
-mutable struct Animation{T <: Any} <: AbstractAnimation
+mutable struct KeyFrames <: AbstractAnimation
     name::String
+    duration::String
+    iterations::Int64
+    direction::String
     properties::Dict{String, Vector{String}}
-    function Animation{T}(name::String) where {T <: Any}
-        properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}()
+    function KeyFrames(name::String, p::Pair{String, Vector{String}} ...) where {T <: Any}
+        properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}(p for p in p)
         new(name, properties)
     end
 end

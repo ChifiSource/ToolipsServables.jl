@@ -236,11 +236,26 @@ function style!(sty::Style, anim::AbstractAnimation)
 end
 
 function style!(comp::Component{<:Any}, anim::AbstractAnimation)
-
+    p {
+  animation-duration: 3s;
+  animation-name: slidein;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+    style!(comp, "animation-duration" => anim[:duration], 
+    "animation-name" => anim.name, "animation-iteration-count" => anim[:iters], 
+    "animation-direction" => anim[:direction])
 end
 
 function style!(comp::Component{<:Any}, sty::Style)
-
+    if contains(sty.name, comp.tag)
+        clname::SubString = split(sty.name, ".")[1]
+        comp[:class] = string(clname)
+    elseif contains(sty.name, "#")
+        comp[:class] = sty.name[2:length(sty.name)]
+    else
+        comp[:class] = sty.name
+    end
 end
 
 """
@@ -261,7 +276,8 @@ mycomp = h2("heading", text = "this text fades in")
 style!(mycomp, frames)
 ```
 """
-function keyframes(name::String)
+function keyframes(name::String, s::Pair{String, <:Any} ...)
+
 end
 
 function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
