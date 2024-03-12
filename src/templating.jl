@@ -271,7 +271,7 @@ style!(mycomp, frames)
 keyframes = KeyFrames
 
 function keyframes!(comp::KeyFrames, name::String, spairs::Pair{String, <:Any} ...)
-    push!(comp.properties, name => Vector(spairs ...))
+    push!(comp.properties, name => join(("$(p[1]):$(p[2])" for p in spairs), ";"))
 end
 
 """

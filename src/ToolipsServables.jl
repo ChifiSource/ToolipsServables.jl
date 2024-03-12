@@ -423,7 +423,7 @@ end
 """
 ### abstract type StyleComponent <: AbstractComponent
 StyleComponents are components which can be written inside of a `Component{:style}` (CSS styles). 
-For base `ToolipsServables`, this includes the parametric `Animation` type and `Style` type. These carry 
+For base `ToolipsServables`, this includes the `KeyFrame` type and `Style` type. These carry 
 the same consistencies as a `Component`, but don't hold a `tag`.
 ##### consistencies
 - `name`**::String**
@@ -509,7 +509,7 @@ Toolips provides parametric anaimations that are intended to be used through hig
 - `string(**::AbstractAnimation**)`
 - `properties**::Dict{Symbol, <:Any}**`
 ```
-- See also: `Animation`, `keyframes`, `style!`, `style`, `StyleComponent`
+- See also: `KeyFrames`, `keyframes`, `style!`, `style`, `StyleComponent`
 """
 abstract type AbstractAnimation <: StyleComponent end
 
@@ -527,8 +527,8 @@ to create a looping animation.
     
 - See also: `keyframes`, `style!`, `style`, `StyleComponent`, `templating`
 ```julia
-Animation{T}(name::String, properties::Pair{String, <:Any} ...; delay::Any = 0.0, length::Any = 5.2,
-iterations::Integer = 1, keyargs ...)
+KeyFrames(name::String, p::Pair{String, Vector{String}} ...; iterations::Int64 = 1,
+duration::String = 1s)
 ```
 ---
 ```example
@@ -542,19 +542,18 @@ mutable struct KeyFrames <: AbstractAnimation
     name::String
     duration::String
     iterations::Int64
-    properties::Dict{String, Vector{String}}
-    function KeyFrames(name::String, p::Pair{String, Vector{String}} ...; 
+    properties::Dict{String, String}
+    function KeyFrames(name::String; 
         iterations::Int64 = 1, duration::String = 1s)
-        properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}(p for p in p)
+        properties::Dict{String, Vector{String}} = Dict{String, String}()
         new(name, duration, iterations, properties)
     end
 end
 
 function string(anim::KeyFrames)
-    properties = anim.properties
-    props = join(begin
-        step = join(("$(p[1]):$(p[2])" for p in prop[2]), ";")
-        "$(prop[1]) {$(step)}"
+    properties::Dict{String, String} = anim.properties
+    props::String = join(begin
+        "$(prop[1]) {$(prop[2])}"
     end for prop in properties)
     """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
 end
