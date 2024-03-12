@@ -515,16 +515,15 @@ abstract type AbstractAnimation <: StyleComponent end
 
 """
 ```julia
-Animation{T <: Any} <: AbstractAnimation <: StyleComponent ...
+KeyFrames <: AbstractAnimation <: StyleComponent <: AbstractComponent <: Servable
 ```
 - name**::String**
+- duration**::String**
+- iterations**::Int64**
 - properties**::Dict{String, Vector{String}}**
 
-The `Animation` is a parametric type meant to hold animation properties 
-for different types of animations. `ToolipsServables` provides one animation 
-type, `keyframes`, or `Animation{:keyframes}`. To construct it, use the 
-`keyframes` function. An `Animation` is then styled to a `style!` or 
-`Component` using `style!`.
+The `KeyFrames` provides keyframe animations to `Component` templating. Provide `0` to `iterations` 
+to create a looping animation.
     
 - See also: `keyframes`, `style!`, `style`, `StyleComponent`, `templating`
 ```julia
@@ -547,7 +546,7 @@ mutable struct KeyFrames <: AbstractAnimation
     function KeyFrames(name::String, p::Pair{String, Vector{String}} ...; 
         iterations::Int64 = 1, duration::String = 1s) where {T <: Any}
         properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}(p for p in p)
-        new(name, properties)
+        new(name, duration, iterations, properties)
     end
 end
 

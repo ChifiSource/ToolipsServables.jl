@@ -188,7 +188,6 @@ end
 
 const style = Style
 
-
 """
 ```julia
 style!(::AbstractComponent, ...) -> ::Nothing
@@ -228,20 +227,17 @@ end
 
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
 
-function style!(sty::Style, anim::AbstractAnimation)
+function style!(sty::AbstractComponent, anim::AbstractAnimation)
+    iters = anim.iterations
+    if iters == 0
+        iters = "infinite"
+    end
     style!(sty, "animation-duration" => anim.duration, 
     "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
     "animation-direction" => anim.direction)
 end
 
 style!(sty::Style, s::Pair{String, <:Any}) = push!(sty.properties, s ...)
-
-
-function style!(comp::Component{<:Any}, anim::AbstractAnimation)
-    style!(comp, "animation-duration" => anim.duration, 
-    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
-    "animation-direction" => anim.direction)
-end
 
 function style!(comp::Component{<:Any}, sty::Style)
     if contains(sty.name, comp.tag)
@@ -256,7 +252,7 @@ end
 
 """
 ```julia
-keyframes(name::String) -> ::Animation{:keyframes}
+keyframes(name::String) -> ::KeyFrames
 ```
 Constructs a `:keyframes` `Animation`, which can have frames added with `keyframes!`. To `keyframes!` we provide, 
 `to`, `from`, or a percentage with style pairs to create an animation.
@@ -272,13 +268,10 @@ mycomp = h2("heading", text = "this text fades in")
 style!(mycomp, frames)
 ```
 """
-function keyframes(name::String, s::Pair{String, <:Any} ...; 
-    iterations::Int64 = 1, duration::String = 1s)
+keyframes = KeyFrames
 
-end
-
-function keyframes!(comp::Animation{:keyframes}, name::String, spairs::Pair{String, <:Any} ...)
-
+function keyframes!(comp::KeyFrames, name::String, spairs::Pair{String, <:Any} ...)
+    push!(comp.properties, name => Vector(spairs ...))
 end
 
 """
@@ -564,7 +557,6 @@ const from = "from"
 
 const to = "to"
 
-
 translateX(s::String) = "translateX($s)"
 translateY(s::String) = "translateY($s)"
 rotate(s::String) = "rotate($s)"
@@ -572,5 +564,4 @@ matrix(n::Int64 ...) = "matrix(" * join([string(i) for i in n], ", ") * ")"
 translate(x::String, y::String) = "translate()"
 skew(one::String, two::String) = "skew($one, $two)"
 scale(n::Any, n2::Any) = "scale($one, $two)"
-
 scale(n::Any) = "scale($n)"
