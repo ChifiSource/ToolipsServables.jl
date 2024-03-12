@@ -375,35 +375,79 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     return(box)::Component{:div}
 end
 
+"""
+```julia
+textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+size::Integer = 10, keyargs ...) -> ::Component{:input}
+```
+Creates an `input` `Component` of type `text` -- using this `Function` will 
+automatically set the `value` of the `textbox` for a `ComponentModifier`.
+---
+```example
+mybox = textbox("sample", 1:10)
+```
+"""
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
     text::String = "", size::Integer = 10, args ...)
-input(name, type = "text", minlength = range[1], maxlength = range[2],
-value = text, size = size,
-oninput = "\"this.setAttribute('value',this.value);\"", p ...,
-args ...)::Component{:input}
-end
-
-function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, args ...)
-input(name, type = "password", minlength = range[1], maxlength = range[2],
-value = text, size = size,
-oninput = "\"this.setAttribute('value',this.value);\"", p ...,
-args ...)::Component{:input}
-end
-
-function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
-    ; value::Integer = 5, args ...)
-    input(name, type = "number", min = range[1], max = range[2],
-    selected = value, oninput = "\"this.setAttribute('value',this.value);\"", p ...,
+    input(name, type = "text", minlength = range[1], maxlength = range[2],
+    value = text, size = size,
+    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
     args ...)::Component{:input}
 end
 
+"""
+```julia
+password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+size::Integer = 10, keyargs ...) -> ::Component{:input}
+```
+Creates an `input` `Component` of type `password` -- using this `Function` will 
+automatically set the `value` of the `password` box for a `ComponentModifier`.
+---
+```example
+mybox = textbox("sample", 1:10)
+```
+"""
+function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
+    text::String = "", size::Integer = 10, args ...)
+    input(name, type = "password", minlength = range[1], maxlength = range[2],
+    value = text, size = size,
+    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
+    args ...)::Component{:input}
+end
+
+"""
+```julia
+
+```
+
+---
+```example
+
+```
+"""
+function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
+    ; value::Integer = 5, args ...)
+    input(name, type = "number", min = range[1], max = range[2],
+    selected = value, oninput = "\"this.setAttribute('value',this.value);\"", p ...;
+    args ...)::Component{:input}
+end
+
+"""
+```julia
+
+```
+
+---
+```example
+
+```
+"""
 function rangeslider(name::String, range::UnitRange = 1:100,
     p::Pair{String, <:Any} ...; value::Integer = 50, step::Integer = 5,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "\"this.setAttribute('value',this.value);\"", p ..., args ...)
+            oninput = "\"this.setAttribute('value',this.value);\"", p ...; args ...)
 end
 
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,

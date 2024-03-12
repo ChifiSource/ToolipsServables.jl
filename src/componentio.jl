@@ -13,12 +13,22 @@ end
 
 """
 ```julia
+htmlcomponent(s::String, args ...) -> ::Vector{<:AbstractComponent}
+
 htmlcomponent(s::String, names_only::Bool = true) -> ::Vector{Component{<:Any}}
+htmlcomponent(s::String, readonly::Vector{String}) -> ::Vector{Component{<:Any}}
 ```
-Reads components from an HTML `String`.
+Reads components from an HTML `String`. Providing `names_only` as `false` will 
+read elements without an `id` as well. Not doing so of course speeds up parsing of 
+by excluding unneeded (unnamed in this case) elements. A `Vector{String}` of names 
+may also be provided.
 ---
 ```example
+comp = "<div id=\\"sample\\">hello</div>"
 
+htmlcomponent(comp)["sample"]["text"]
+
+"hello"
 ```
 """
 function htmlcomponent(s::String, names_only::Bool = true)
