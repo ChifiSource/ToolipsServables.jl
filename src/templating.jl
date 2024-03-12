@@ -222,29 +222,25 @@ function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
     if ~(:style in keys(c.properties))
         c[:style] = ""
     end
-    for style in s
-        k, v = style[1], style[2]
-        c[:style] = c[:style] * "$k:$v;"
-    end
+    c[:style] = c[:style] * join("$k:$v;" for style in s)
     nothing
 end
 
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
 
 function style!(sty::Style, anim::AbstractAnimation)
-
+    style!(sty, "animation-duration" => anim.duration, 
+    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
+    "animation-direction" => anim.direction)
 end
 
+style!(sty::Style, s::Pair{String, <:Any}) = push!(sty.properties, s ...)
+
+
 function style!(comp::Component{<:Any}, anim::AbstractAnimation)
-    p {
-  animation-duration: 3s;
-  animation-name: slidein;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
-}
-    style!(comp, "animation-duration" => anim[:duration], 
-    "animation-name" => anim.name, "animation-iteration-count" => anim[:iters], 
-    "animation-direction" => anim[:direction])
+    style!(comp, "animation-duration" => anim.duration, 
+    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
+    "animation-direction" => anim.direction)
 end
 
 function style!(comp::Component{<:Any}, sty::Style)
@@ -276,7 +272,8 @@ mycomp = h2("heading", text = "this text fades in")
 style!(mycomp, frames)
 ```
 """
-function keyframes(name::String, s::Pair{String, <:Any} ...)
+function keyframes(name::String, s::Pair{String, <:Any} ...; 
+    iterations::Int64 = 1, duration::String = 1s)
 
 end
 

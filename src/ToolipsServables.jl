@@ -543,9 +543,9 @@ mutable struct KeyFrames <: AbstractAnimation
     name::String
     duration::String
     iterations::Int64
-    direction::String
     properties::Dict{String, Vector{String}}
-    function KeyFrames(name::String, p::Pair{String, Vector{String}} ...) where {T <: Any}
+    function KeyFrames(name::String, p::Pair{String, Vector{String}} ...; 
+        iterations::Int64 = 1, duration::String = 1s) where {T <: Any}
         properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}(p for p in p)
         new(name, properties)
     end
