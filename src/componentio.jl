@@ -11,6 +11,16 @@ function html_properties(s::AbstractString)
     properties::Dict{String, Any}
 end
 
+"""
+```julia
+htmlcomponent(s::String, names_only::Bool = true) -> ::Vector{Component{<:Any}}
+```
+Reads components from an HTML `String`.
+---
+```example
+
+```
+"""
 function htmlcomponent(s::String, names_only::Bool = true)
     stop::Int64 = 1
     laststop::Int64 = 1

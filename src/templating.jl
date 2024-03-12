@@ -179,7 +179,10 @@ set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
 by indexing `:children` on a `Component`.
 ---
 ```example
-
+comp = body("example-body")
+mainheader = div("mainheader")
+greeter = h3("greet", text = "welcome to my site")
+set_children!(comp, [mainheader, greeter])
 ```
 """
 set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
@@ -221,7 +224,7 @@ function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
     if ~(:style in keys(c.properties))
         c[:style] = ""
     end
-    c[:style] = c[:style] * join("$k:$v;" for style in s)
+    c[:style] = c[:style] * join("$(k[1]):$(k[2]);" for k in s)
     nothing
 end
 
@@ -411,8 +414,23 @@ function colorinput(name::String, p::Pair{String, <:Any} ...;
     args ...)::Component{:input}
 end
 
+"""
+```julia
+cursor(name::String, args ...; args ...) -> ::Component{:script}
+```
+Creates a `cursor` `Component` (a `Component{:cursor}`). This is a special `Component` which 
+tracks the `x` and `y` position of the cursor in its properties (`:x` and `:y` respectively.) 
+Ideally, this is for use with a `ComponentModifier` from `ToolipsSession`.
+---
+```example
+using Toolips
+using Toolips.Components
+using ToolipsSession
+curs = cursor("")
+```
+"""
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
-    cursor_updater = script(name, p ..., args ...)
+    cursor_updater = Component{:cursor}(name, p ..., tag = "script"; args ...)
     cursor_updater["x"], cursor_updater["y"] = 1, 1
     cursor_updater[:text] = """
     function updatecursor(event) {
@@ -420,7 +438,7 @@ function cursor(name::String, p::Pair{String, Any} ...; args ...)
         document.getElementById("$name").setAttribute("y", event.clientY);}
     document.getElementsByTagName("body")[0].addEventListener("mousemove", updatecursor);
    """
-   cursor_updater::Component{:script}
+   cursor_updater::Component{:cursor}
 end
 
 """
@@ -432,7 +450,11 @@ Note that this creates the same context menu across the page. If we wanted to ri
 we might instead `append!` something using a `ComponentModifier`. 
 ---
 ```example
+comp = div("popup", text = "i pop up when you right click")
+style!(comp, "background-color" => "dark-red", "color" => "white")
+context_menu!(comp)
 
+write!("", comp)
 ```
 """
 function context_menu!(menu::Component{<:Any})

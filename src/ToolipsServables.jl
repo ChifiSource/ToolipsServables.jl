@@ -374,10 +374,10 @@ mutable struct Component{T <: Any} <: AbstractComponent
         end
         new{T}(name, properties, tag)
     end
-    function Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
+    function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
         properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
         [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
-        Component{T}(name,  string(T), properties)::Component{T}
+        Component{T}(name,  tag, properties)::Component{T}
     end
     function Component(tag::String, name::String, props::Any ...; args ...)
         Component{Symbol(tag)}(name, props ...; args ...)
