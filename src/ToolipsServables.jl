@@ -544,13 +544,13 @@ mutable struct KeyFrames <: AbstractAnimation
     iterations::Int64
     properties::Dict{String, Vector{String}}
     function KeyFrames(name::String, p::Pair{String, Vector{String}} ...; 
-        iterations::Int64 = 1, duration::String = 1s) where {T <: Any}
+        iterations::Int64 = 1, duration::String = 1s)
         properties::Dict{String, Vector{String}} = Dict{String, Vector{String}}(p for p in p)
         new(name, duration, iterations, properties)
     end
 end
 
-function string(anim::Animation{:keyframes})
+function string(anim::KeyFrames)
     properties = anim.properties
     props = join(begin
         step = join(("$(p[1]):$(p[2])" for p in prop[2]), ";")
