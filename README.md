@@ -48,13 +48,27 @@ c = Toolips.SpoofConnection()
 write!(c, myd)
 ```
 ##### map
-- [components](#components)
-  - [styles](#styles)
-  - [composing](#composing)
-- [IO](#io)
+- [quick start](#toolips-servables)
+  - [documentation](#documentation)
+  - [files](#files)
+  - [components](#components)
+  - [IO](#io)
 - [contributing](#contributing-guidelines)
-### components
-#### styles
-#### composing
+### toolips servables
+##### documentation
+##### files
+##### components
+The most crucial goal of this package is to provide a parametric HTML templating framework for Julia. This is all facilitated through the `Component`. The `Component` is equivalent to an `HTML` element. For example we have the `HTML` `div` and the `ToolipsServables` `div`:
+```julia
+using ToolipsServables
+container = div("container", contenteditable = true, text = "hello world")
+```
+```html
+<div id="container" contenteditable="true">hello world</div>
+```
+Components are meant to be written to some output, or transformed into a `String` to be displayed as `HTML`. Using a few simple functions, we are able to compose and style these components to create our page. The main functions for these tasks are `push!`, `style!`
+```julia
+```
 ###### IO
-##### contributing guidelines
+It is likely we are somewhat familiar with `ToolipsServables` output at this point. Any type which is binded to `write` is generally writable using `write!`, though this might not always be the case. When writing, a `Servable` will call its typical `string` `Method`. `ToolipsServables` also provides a useful input function for parsing `HTML` into Components -- such as from a file, or request; `htmlcomponent`.
+#### contributing guidelines
