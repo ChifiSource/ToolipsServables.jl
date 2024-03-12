@@ -39,8 +39,9 @@ style!(gobutton, leavebutton)
 - `write!(::IO, ::Servable)`
 - `write!(::String, ::Servable)`
 - `copy(c::Component{<:Any})`
-- `Style` <: `AbstractComponent`
+- `Style` <: `StyleComponentComponent`
 - abstract type `AbstractAnimation` <: `StyleComponent`
+- `KeyFrames` <: `AbstractAnimation`
 
 ###### templating
 - `templating` (`?templating`)

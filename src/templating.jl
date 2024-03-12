@@ -37,11 +37,6 @@ properties.
 - See also: `arguments`, `style_properties`, `elements`, `div`, `style`, `set_children!`, `push!`, `Style`
 """
 const templating = 1
-"""
-"""
-const style_properties = 1
-
-const arguments = 1
 
 """
 The following is a *comprehensive list of all component elements. Elements are called 
@@ -187,6 +182,7 @@ set_children!(comp, [mainheader, greeter])
 """
 set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
     comp[:children] = Vector{AbstractComponent}(children)
+    nothing
 end
 
 const style = Style
@@ -238,6 +234,7 @@ function style!(sty::AbstractComponent, anim::AbstractAnimation)
     style!(sty, "animation-duration" => anim.duration, 
     "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
     "animation-direction" => anim.direction)
+    nothing
 end
 
 style!(sty::Style, s::Pair{String, <:Any}) = push!(sty.properties, s ...)
@@ -251,6 +248,7 @@ function style!(comp::Component{<:Any}, sty::Style)
     else
         comp[:class] = sty.name
     end
+    nothing
 end
 
 """
@@ -279,7 +277,7 @@ end
 
 """
 ```julia
-select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...)
+select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; keyargs ...) -> ::Component{:select}
 ```
 Creates a combobox components from a `Vector` of options. This provides 
 a quick way to make a selection combobox using the 
@@ -302,7 +300,7 @@ end
 
 """
 ```julia
-options(options::String ...s)
+options(options::String ...s) -> ::Vector{AbstractComponent}
 ```
 Provide `options` to a `select` to make a dropbox very quickly.
 ---
@@ -345,15 +343,26 @@ write!(o, img)
 """
 function base64img(name::String, raw::Any, filetype::String = "png",
     p::Pair{String, Any} ...; args ...)
-    io = IOBuffer();
+    io::IOBuffer = IOBuffer();
     b64 = Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
     close(b64)
-    mysrc = String(io.data)
+    mysrc::String = String(io.data)
     img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
     args ...)::Component{:img}
 end
 
+"""
+```julia
+textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "", keyargs ...) -> ::Component{:div}
+```
+A premade textdiv, includes a `raw'name'` `script` which stores the raw text, without 
+spaces.
+---
+```example
+mytdiv = textdiv("example", text = "sample")
+```
+"""
 function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     args ...)
     raw = element("raw$name")
@@ -426,7 +435,16 @@ Ideally, this is for use with a `ComponentModifier` from `ToolipsSession`.
 using Toolips
 using Toolips.Components
 using ToolipsSession
-curs = cursor("")
+
+r = route("/") do c::Connection
+    curs = cursor("example")
+    bod = body("exbod")
+    on(c, bod, "click") do cm::ComponentModifier
+        alert!(cm, cm["example"]["x"])
+    end
+    push!(bod, curs)
+    write!(c, bod)
+end
 ```
 """
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
