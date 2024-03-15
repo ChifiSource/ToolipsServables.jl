@@ -398,7 +398,7 @@ end
 """
 ```julia
 password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
-size::Integer = 10, keyargs ...) -> ::Component{:input}
+size::Integer = 10, value::Integer = range[1], keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `password` -- using this `Function` will 
 automatically set the `value` of the `password` box for a `ComponentModifier`.
@@ -408,7 +408,7 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, args ...)
+    text::String = "", size::Integer = 10, value::Integer= range[1] args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
     value = text, size = size,
     oninput = "\"this.setAttribute('value',this.value);\"", p ...;
@@ -417,12 +417,14 @@ end
 
 """
 ```julia
-
+numberinput(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
-
+Creates a number input component (`Component{:input}`). `value` will be set for 
+a `ComponentModifier`, the default value will be the first step in `range`.
 ---
 ```example
-
+num_inp = numberinput("sample", range = 30:40, value = 35)
 ```
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
@@ -434,12 +436,13 @@ end
 
 """
 ```julia
-
+rangeslider(name::String, range::UnitRange{Int64} = 1:100, args::Pair{String, <:Any} ...;
+value::Integer = 50, step::Integer = 5) -> `Component{:input}`
 ```
-
+Creates a `Component{:input}` of type "range". 
 ---
 ```example
-
+slider = rangeslider("sample", 1:500, value = 1, step = 50)
 ```
 """
 function rangeslider(name::String, range::UnitRange = 1:100,
