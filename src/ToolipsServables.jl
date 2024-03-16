@@ -137,7 +137,7 @@ style!(gobutton, leavebutton)
   - `componentmd`
 """
 module ToolipsServables
-import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *
+import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy
 using Base64
 
 """
@@ -285,7 +285,7 @@ abstract type AbstractComponent <: Servable end
 string(s::Vector{<:AbstractComponent}) = join(string(serv) for serv in s)
 
 function in(name::String, v::Vector{<:AbstractComponent})
-    pos = findfirst(c::AbstractComponent -> c.name == name, pos)
+    pos = findfirst(c::AbstractComponent -> c.name == name, v)
     ~(isnothing(pos))
 end
 
@@ -380,9 +380,6 @@ mutable struct Component{T <: Any} <: AbstractComponent
         [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
     end
-    function Component(tag::String, name::String, props::Any ...; args ...)
-        Component{Symbol(tag)}(name, props ...; args ...)
-    end
 end
 
 getindex(s::AbstractComponent, symb::Symbol) = s.properties[symb]
@@ -417,8 +414,10 @@ string(comp::Component{<:Any}) = begin
 end
 
 function copy(c::Component{<:Any})
-    comp = Component(c.name, c.tag, copy(c.properties))
-    comp
+    props = copy(c.properties)
+    comp = Component{Symbol(c.tag)}(c.name, tag = c.tag)
+    comp.properties = props
+    return(comp)
 end
 
 """

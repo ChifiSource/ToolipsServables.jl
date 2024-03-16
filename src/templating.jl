@@ -408,7 +408,7 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, value::Integer= range[1] args ...)
+    text::String = "", size::Integer = 10, value::Integer= range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
     value = text, size = size,
     oninput = "\"this.setAttribute('value',this.value);\"", p ...;

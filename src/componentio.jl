@@ -1,14 +1,14 @@
 function html_properties(s::AbstractString)
     propvec::Vector{SubString} = split(s, " ")
-    properties::Dict{String, Any} = Dict{String, Any}(begin
+    properties::Dict{Symbol, Any} = Dict{Symbol, Any}(begin
         ppair::Vector{SubString} = split(segment, "=")
         if length(ppair) < 2
-            string(ppair[1]) => string(ppair[1])
+            Symbol(ppair[1]) => string(ppair[1])
         else
-            string(ppair[1]) => replace(string(ppair[2]), "\"" => "")
+            Symbol(ppair[1]) => replace(string(ppair[2]), "\"" => "")
         end
     end for segment in propvec)
-    properties::Dict{String, Any}
+    properties::Dict{Symbol, Any}
 end
 
 """
@@ -62,10 +62,10 @@ function htmlcomponent(s::String, names_only::Bool = true)
             continue
         end
         argstring::String = s[minimum(tagend) + 1:minimum(argfinish) - 1]
-        properties::Dict{String, Any} = html_properties(argstring)
-        if "id" in keys(properties)
-            name = properties["id"]
-            delete!(properties, "id")
+        properties::Dict{Symbol, Any} = html_properties(argstring)
+        if :id in keys(properties)
+            name = properties[:id]
+            delete!(properties, :id)
         end
         text::String = ""
         try
@@ -73,7 +73,7 @@ function htmlcomponent(s::String, names_only::Bool = true)
         catch
             text = s[minimum(argfinish) + 1:minimum(finisher) - 2]
         end
-        push!(properties, "text" => text)
+        push!(properties, :text => text)
         props = Dict{Symbol, Any}(Symbol(k[1]) => k[2] for k in properties)
         push!(comps, Component{Symbol(tag)}(name, tag, props))
     end
@@ -84,7 +84,7 @@ function htmlcomponent(s::String, readonly::Vector{String})
     if readonly[1] == "none"
         return Vector{Servable}()
     end
-    Vector{Servable}(filter!(x -> ~(isnothing(x)), [begin
+    Vector{AbstractComponent}(filter!(x -> ~(isnothing(x)), [begin
         element_sect = findfirst(" id=\"$compname\"", s)
         if ~(isnothing(element_sect))
             starttag = findprev("<", s, element_sect[1])[1]
@@ -99,13 +99,13 @@ function htmlcomponent(s::String, readonly::Vector{String})
                 name = properties["id"]
                 delete!(properties, "id")
             end
-            push!(properties, "text" => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
+            push!(properties, :text => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
             "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
             "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?"))
-            Component(compname, string(tg), properties)
+            Component{Symbol(tg)}(compname, tg, properties)
         else
         end
-    end for compname in readonly]))::Vector{Component{<:Any}}
+    end for compname in readonly]))::Vector{AbstractComponent}
 end
 
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
