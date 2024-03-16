@@ -5,7 +5,7 @@
 </div>
 
 ###### high-level and versatile `Component` templating
-This package provides a versatile `Component` templating interface primarily intended to fill the role of HTML and CSS templating for [Toolips](https://github.com/ChifiSource/Toolips.jl).
+This package provides a versatile `Component` templating interface primarily intended to fill the role of HTML and CSS templating for [Toolips](https://github.com/ChifiSource/Toolips.jl) **0.3 +**.
 ```julia
 using Pkg; Pkg.add("ToolipsServables")
 # or with the web-framework `Toolips`:
@@ -47,16 +47,18 @@ using Toolips
 c = Toolips.SpoofConnection()
 write!(c, myd)
 ```
-##### map
+### toolips servables
+`ToolipsServables` provides an extensible HTML and CSS templating platform centralized on parametric typing and extensibility. This package provides a simple API for creating beautiful websites to write to responses through both files and a *julianized* API.
+###### map
 - [quick start](#toolips-servables)
   - [documentation](#documentation)
   - [files](#files)
   - [components](#components)
   - [IO](#io)
 - [contributing](#contributing-guidelines)
-### toolips servables
 ##### documentation
 ##### files
+Alongside an interface for templating HTML files within Julia, `ToolipsServables` also includes a parametric `File` type. With `Toolips`, these types can be interpolated (*or simply served*) very easily!
 ##### components
 The most crucial goal of this package is to provide a parametric HTML templating framework for Julia. This is all facilitated through the `Component`. The `Component` is equivalent to an `HTML` element. For example we have the `HTML` `div` and the `ToolipsServables` `div`:
 ```julia
@@ -66,8 +68,11 @@ container = div("container", contenteditable = true, text = "hello world")
 ```html
 <div id="container" contenteditable="true">hello world</div>
 ```
-Components are meant to be written to some output, or transformed into a `String` to be displayed as `HTML`. Using a few simple functions, we are able to compose and style these components to create our page. The main functions for these tasks are `push!`, `style!`
+Components are meant to be written to some output, or transformed into a `String` to be displayed as `HTML`. Using a few simple functions, we are able to compose and style these components to create our page. The main functions for these tasks are `push!`, `style!`, and occassionally `set_children!`. Yes, it really is that simple! Here is a simple page composition:
 ```julia
+mainheader = div("myheader", align = "center")
+style!(mainpadding, "background-color" => "darkgray")
+push!()
 ```
 ###### IO
 It is likely we are somewhat familiar with `ToolipsServables` output at this point. Any type which is binded to `write` is generally writable using `write!`, though this might not always be the case. When writing, a `Servable` will call its typical `string` `Method`. `ToolipsServables` also provides a useful input function for parsing `HTML` into Components -- such as from a file, or request; `htmlcomponent`.
