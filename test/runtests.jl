@@ -2,6 +2,8 @@ using ToolipsServables
 using ToolipsServables: htmlcomponent
 using Test
 dir = @__DIR__
+@testset "toolips servables!" verbose = true begin
+    # //begin tests
 @testset "types" verbose = true begin
     @testset "File" begin
         f = File(dir * "/runtests.jl")
@@ -41,10 +43,15 @@ end
         father = body("bod")
         push!(father, comp)
         @test father[:children][1].name == comp.name
-
+        style!(comp, "color" => "blue")
+        @test contains(comp["style"], "color:blue;")
+        set_children!(father, [comp, copy(comp)])
+        @test length(father[:children]) == 2
     end
     @testset "style templating" verbose = true begin
-    
+        newsty = style("newsample", "color" => "red")
+        divsty = style("div.sample", "color" => "orange")
+
     end
     @testset "special components" verbose = true begin
 
@@ -63,6 +70,11 @@ end
         @test comps["textbox"]["text"] == "text"
     end
     @testset "output (String, IOBuffer)" begin
-
+        io = IOBuffer()
+        comp = div("sample", text = "example")
+        write!(io, comp, comp)
+        @test contains(String(io.data), "id=\"sample\"")
+        @test string(comp) == "<div id=\"sample\" >example</div>"
     end
+end #// tests
 end
