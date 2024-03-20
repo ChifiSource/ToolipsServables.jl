@@ -232,7 +232,7 @@ function style!(sty::AbstractComponent, anim::AbstractAnimation)
         iters = "infinite"
     end
     style!(sty, "animation-duration" => anim.duration, 
-    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations)
+    "animation-name" => anim.name, "animation-iteration-count" => iters)
     nothing
 end
 
@@ -642,3 +642,7 @@ end
 const from = "from"
 
 const to = "to"
+
+translateX(a::Any) = "translateX($a)"
+translateY(a::Any) = "translateY($a)"
+scale(a::Any) = "skew($a)"
