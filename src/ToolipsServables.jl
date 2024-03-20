@@ -591,4 +591,7 @@ export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
 export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6
 export element, label, script, nav, button, form, section, body, header, footer, b
 export source, audio, video, table, tr, th, td, style, textdiv
+export keyframes, keyframes!, select, option, options, base64img, textdiv, textbox
+export password, numberinput, rangeslider, checkbox, colorinput, cursor, context_menu!
+export from, to, rgba
 end # module ToolipsServables

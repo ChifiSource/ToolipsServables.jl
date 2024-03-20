@@ -51,10 +51,43 @@ end
     @testset "style templating" verbose = true begin
         newsty = style("newsample", "color" => "red")
         divsty = style("div.sample", "color" => "orange")
-
+        style!(comp, divsty)
+        @testset "style" begin
+            @test comp[:class] == "sample"
+            @test contains(string(divsty), "div.sample {color:orange;}")
+        end
+        @testset "keyframes" begin
+            frames = keyframes("fadein")
+            keyframes!(frames, from, "opacity" => 0percent)
+            keyframes!(frames, to, "opacity" => 100percent)
+            style!(newsty, frames)
+            @test newsty["animation-name"] == "fadein"
+            style!(comp, frames)
+            @test contains(comp["style"], "animation-name")
+        end
     end
     @testset "special components" verbose = true begin
-
+        @testset "select/options" begin
+            opts = options("alien", "human", "person")
+            @test length(opts) == 3
+            @test :text in keys(opts[1].properties)
+            box = select("sampbox", opts, value = opts[1]["text"])
+            @test length(box[:children]) == 3
+            @test box[:value] == opts[1]["text"]
+            sel = select("sampbox2", value = "testbox")
+            @test sel[:value] == "testbox"
+        end
+        @testset "canonical input components" begin
+            tdiv = textdiv("mysample", text = "sample")
+            @test tdiv.name == "mysample"
+            @test typeof(tdiv) == Component{:div}
+            tbox = textbox("newsample", 1:10)
+            @test typeof(tbox) == Component{:input}
+            tbox = password("newsample", 1:10)
+            @test typeof(tbox) == Component{:input}
+            @test tbox[:type] == "password"
+            
+        end
     end
 end
 
@@ -68,6 +101,9 @@ end
         @test length(comps) == 2
         comps = htmlcomponent(html, ["textbox"])
         @test comps["textbox"]["text"] == "text"
+        html = """<a id="sample" contenteditable="true"></a>"""
+        comps = htmlcomponent(html)
+        @test comps[1]["contenteditable"] == "true"
     end
     @testset "output (String, IOBuffer)" begin
         io = IOBuffer()
@@ -76,5 +112,10 @@ end
         @test contains(String(io.data), "id=\"sample\"")
         @test string(comp) == "<div id=\"sample\" >example</div>"
     end
-end #// tests
+end 
+
+@testset "recompose" begin
+
 end
+
+end #// tests

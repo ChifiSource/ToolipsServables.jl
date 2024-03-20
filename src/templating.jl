@@ -216,7 +216,7 @@ style!(mycomp, myclass)
 """
 function style! end
 
-function style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+function style!(c::Component{<:Any}, s::Pair{String, <:Any} ...)
     if ~(:style in keys(c.properties))
         c[:style] = ""
     end
@@ -232,19 +232,18 @@ function style!(sty::AbstractComponent, anim::AbstractAnimation)
         iters = "infinite"
     end
     style!(sty, "animation-duration" => anim.duration, 
-    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations, 
-    "animation-direction" => anim.direction)
+    "animation-name" => anim.name, "animation-iteration-count" => anim.iterations)
     nothing
 end
 
-style!(sty::Style, s::Pair{String, <:Any}) = push!(sty.properties, s ...)
+style!(sty::Style, s::Pair{String, <:Any} ...) = push!(sty.properties, (Symbol(p[1]) => string(p[2]) for p in s) ...)
 
 function style!(comp::Component{<:Any}, sty::Style)
     if contains(sty.name, comp.tag)
-        clname::SubString = split(sty.name, ".")[1]
-        comp[:class] = string(clname)
+        splts::Vector{SubString} = split(sty.name, ".")
+        comp[:class] = string(join(splts[2:length(splts)]))
     elseif contains(sty.name, "#")
-        comp[:class] = sty.name[2:length(sty.name)]
+        comp[:class] = string(join(sty.name[2:length(sty.name)]))
     else
         comp[:class] = sty.name
     end
@@ -259,7 +258,7 @@ Constructs a `:keyframes` `Animation`, which can have frames added with `keyfram
 `to`, `from`, or a percentage with style pairs to create an animation.
 ---
 ```example
-frames = keyframes()
+frames = keyframes("fadein")
 
 keyframes!(frames, from, "opacity" => 0percent)
 keyframes!(frames, to, "opacity" => 100percent)
@@ -292,7 +291,7 @@ mysel = select("mainselect", myopts, value = "henry")
 ```
 """
 function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component(name, "select", p ..., args ...)
+    thedrop = Component{:select}(name, p ..., args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
     thedrop[:children] = options
     thedrop::Component{:select}
@@ -313,7 +312,7 @@ mysel = select("mainselect", myopts, value = "henry")
 options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt) for opt in options])
 
 function select(name::String,  p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component(name, "select", p ...; args ...)
+    thedrop = Component{:select}(name, p ...; args ...)
     thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
     thedrop::Component{:select}
 end
@@ -408,7 +407,7 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, value::Integer= range[1], args ...)
+    text::String = "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
     value = text, size = size,
     oninput = "\"this.setAttribute('value',this.value);\"", p ...;
@@ -643,12 +642,3 @@ end
 const from = "from"
 
 const to = "to"
-
-translateX(s::String) = "translateX($s)"
-translateY(s::String) = "translateY($s)"
-rotate(s::String) = "rotate($s)"
-matrix(n::Int64 ...) = "matrix(" * join([string(i) for i in n], ", ") * ")"
-translate(x::String, y::String) = "translate()"
-skew(one::String, two::String) = "skew($one, $two)"
-scale(n::Any, n2::Any) = "scale($one, $two)"
-scale(n::Any) = "scale($n)"

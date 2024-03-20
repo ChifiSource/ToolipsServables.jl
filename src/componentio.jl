@@ -36,9 +36,6 @@ function htmlcomponent(s::String, names_only::Bool = true)
     laststop::Int64 = 1
     comps::Vector{Component{<:Any}} = Vector{Component{<:Any}}()
     while true
-        if stop == laststop
-            println("no")
-        end
         laststop = stop
         argfinish = findnext(">", s, stop)
         tagstart = findnext("<", s, stop)
