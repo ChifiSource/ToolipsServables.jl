@@ -133,6 +133,10 @@ end
 end 
 
 @testset "recompose" begin
-    
+    html = """<div id="sample"><button id="hello">hello</button></div><element id="third" x="5"></element>"""
+    comps = htmlcomponent(html)
+    comps[1][:text] = ""
+    push!(comps[1], comps[2])
+    @test replace(write!("", comps[1], comps[3]), " " => "") == replace(html, " " => "")
 end
 end #// tests
