@@ -427,9 +427,9 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 ```
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
-    ; value::Integer = 5, args ...)
+    ; selected::Integer = 5, args ...)
     input(name, type = "number", min = range[1], max = range[2],
-    selected = value, oninput = "\"this.setAttribute('value',this.value);\"", p ...;
+    selected = selected, oninput = "\"this.setAttribute('selected',this.value);\"", p ...;
     args ...)::Component{:input}
 end
 
@@ -538,7 +538,7 @@ const scope = document.querySelector("body");
 end
 
 function keyinput(name::String, p::Pair{String, <:Any} ...; text = "w", args ...)
-    button(name, p ..., text = text,
+    Component{:keyinput}(name, p ..., text = text, tag = "button",
     onkeypress = "this.innerHTML=event.key;this.setAttribute('value',event.key);",
     onclick = "this.focus();", value = "W",  args ...)
 end

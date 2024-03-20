@@ -77,8 +77,8 @@ end
             sel = select("sampbox2", value = "testbox")
             @test sel[:value] == "testbox"
         end
+        tdiv = textdiv("mysample", text = "sample")
         @testset "canonical input components" begin
-            tdiv = textdiv("mysample", text = "sample")
             @test tdiv.name == "mysample"
             @test typeof(tdiv) == Component{:div}
             tbox = textbox("newsample", 1:10)
@@ -86,7 +86,25 @@ end
             tbox = password("newsample", 1:10)
             @test typeof(tbox) == Component{:input}
             @test tbox[:type] == "password"
-            
+            numinput = ToolipsServables.numberinput("sample", 1:50, selected = 15)
+            @test typeof(numinput) == Component{:input}
+            @test numinput[:selected] == string(15)
+            r = rangeslider("sample")
+            @test r.name == "sample"
+            @test r["type"] == "range"
+            checkbx = checkbox("mycheck", text = "check me!", value = false)
+            @test string(checkbx[:value]) == "false"
+            colinp = colorinput("testbox")
+            @test colinp[:value] == "#ffffff"
+        end
+        @testset "special input components" begin
+            curs = cursor("sample")
+            @test typeof(curs) == Component{:cursor}
+            @test curs.tag == "script"
+            ToolipsServables.context_menu!(tdiv)
+            @test length(tdiv[:extras]) > 0
+            kinput = keyinput("sample", text = "W")
+            @test typeof(kinput) == Component{:keyinput}
         end
     end
 end
@@ -115,7 +133,6 @@ end
 end 
 
 @testset "recompose" begin
-
+    
 end
-
 end #// tests
