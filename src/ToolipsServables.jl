@@ -25,9 +25,36 @@ gobutton = button("go", text = "go!")
 
 style!(gobutton, leavebutton)
 
+# creting styles
+post_style = style("div.postbox", "border-radius" => 5px, "border" => "5px solid black")
+fadein = keyframes("fadein")
+                #  vv (or 0percent)
+keyframes!(fadein, from, "opacity" => 0percent)
+                #  vv (or 100percent)
+keyframes!(fadein, to, "opacity" => 100percent)
+style!(post_style, fadein)
 # composing a body:
-
-# components can be written to <: IO or `Strings` with `write!`
+mainbod = body("mainbody")
+    # animation
+style!(mainbod, fadein)
+    # inline styles
+style!(mainbod, "padding" => 10percent, "background-color" => "lightblue")
+    # generating post divs
+posts = ["hello world!", "post example"]
+for (e, post) in enumerate(posts)
+    comp = div("post$(e)")
+    style!(comp, post_style)
+    posthead = h4("head$(e)", text = "$(e)")
+    postbody = p("body$(e)", text = post)
+    style!(postbody, "font-size" => 13pt, "color" => "darkgray")
+    push!(comp, posthead, postbody)
+    # push! to body:
+    push!(mainbod, comp)
+end
+# components can be written with `write!` or turned to a `String` with `string`
+# <:IO, <:Toolips.AbstractConnection, `String`
+@info string(mainbod)
+result = write!("", post_style, fadein, mainbod)
 ```
 ###### servable base
 - abstract type `Servable` end
@@ -276,8 +303,8 @@ Components are html elements or CSS classes.
 - See also: `Component`, `Servable`, `StyleComponent`, `style!`
 ##### consistencies
 - `name`**::String**
-- `string(**::AbstractComponent**)`
-- `properties**::Dict{Symbol, <:Any}**`
+- `string`**::AbstractComponent**
+- `properties`**::Dict{Symbol, <:Any}**
 ```
 """
 abstract type AbstractComponent <: Servable end
@@ -311,9 +338,9 @@ end
 ```julia
 Component{T <: Any} <: AbstractComponent <: Servable
 ```
-- name**::String**
-- properties**::Dict{Symbol, Any}**
-- tag**::String**
+- `name`**::String**
+- `properties`**::Dict{Symbol, Any}**
+- `tag`**::String**
 
 The `Component` is the `ToolipsServables` structure for representing an `HTML` element.
 Components may be indexed using both strings and symbols; they are typed to their element name, 
