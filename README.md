@@ -10,19 +10,6 @@ This package provides a versatile `Component` templating interface primarily int
 using Pkg; Pkg.add("ToolipsServables")
 # or with the web-framework `Toolips`:
 using Pkg; Pkg.add("Toolips")
-```
-```julia
-using ToolipsServables
-# using Toolips.Components
-
-newstyle = Style("div.exampleclass", "color" => "green", "background-color" => "black", "font-size" => 13pt)
-
-newdiv = div("newdiv", align = "center", class = "exampleclass")
-
-s = write!("", newstyle, newdiv)
-
-comps = ToolipsServables.htmlcomponent(s)
-```
 ```julia
 using ToolipsServables
 # using Toolips.Components
@@ -73,6 +60,57 @@ Components are meant to be written to some output, or transformed into a `String
 mainheader = div("myheader", align = "center")
 style!(mainpadding, "background-color" => "darkgray")
 push!()
+```
+Here is a detailed templating example which includes several forms of templating:
+```julia
+using ToolipsServables
+# (From Toolips ?):
+#using Toolips.Components
+
+# creating components:
+maindiv::Component{:div} = div("centered", align = "center")
+greeter_heading::Component{:h3} = h3("greeter", text = "hello world!")
+# creating a style
+bgstyle::Style = style("greeter_style", "color" => "white", 
+"font-weight" => "bold")
+
+# styling a component directly:
+style!(maindiv, "background-color" => "purple", "margin-top" => 5px)
+leavebutton = button("leave", text = "leave")
+gobutton = button("go", text = "go!")
+
+style!(gobutton, leavebutton)
+
+# creting styles
+post_style = style("div.postbox", "border-radius" => 5px, "border" => "5px solid black")
+fadein = keyframes("fadein")
+                #  vv (or 0percent)
+keyframes!(fadein, from, "opacity" => 0percent)
+                #  vv (or 100percent)
+keyframes!(fadein, to, "opacity" => 100percent)
+style!(post_style, fadein)
+# composing a body:
+mainbod = body("mainbody")
+    # animation
+style!(mainbod, fadein)
+    # inline styles
+style!(mainbod, "padding" => 10percent, "background-color" => "lightblue")
+    # generating post divs
+posts = ["hello world!", "post example"]
+for (e, post) in enumerate(posts)
+    comp = div("post$(e)")
+    style!(comp, post_style)
+    posthead = h4("head$(e)", text = "$(e)")
+    postbody = p("body$(e)", text = post)
+    style!(postbody, "font-size" => 13pt, "color" => "darkgray")
+    push!(comp, posthead, postbody)
+    # push! to body:
+    push!(mainbod, comp)
+end
+# components can be written with `write!` or turned to a `String` with `string`
+# <:IO, <:Toolips.AbstractConnection, `String`
+@info string(mainbod)
+result = write!("", post_style, fadein, mainbod)
 ```
 ###### IO
 It is likely we are somewhat familiar with `ToolipsServables` output at this point. Any type which is binded to `write` is generally writable using `write!`, though this might not always be the case. When writing, a `Servable` will call its typical `string` `Method`. `ToolipsServables` also provides a useful input function for parsing `HTML` into Components -- such as from a file, or request; `htmlcomponent`.
