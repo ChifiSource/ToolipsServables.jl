@@ -42,10 +42,10 @@ style!(mainbod, "padding" => 10percent, "background-color" => "lightblue")
     # generating post divs
 posts = ["hello world!", "post example"]
 for (e, post) in enumerate(posts)
-    comp = div("post$(e)")
+    comp = div("post\$(e)")
     style!(comp, post_style)
-    posthead = h4("head$(e)", text = "$(e)")
-    postbody = p("body$(e)", text = post)
+    posthead = h4("head\$(e)", text = "\$(e)")
+    postbody = p("body\$(e)", text = post)
     style!(postbody, "font-size" => 13pt, "color" => "darkgray")
     push!(comp, posthead, postbody)
     # push! to body:
