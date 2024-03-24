@@ -41,7 +41,6 @@ write!(c, myd)
   - [documentation](#documentation)
   - [files](#files)
   - [components](#components)
-  - [IO](#io)
 - [contributing](#contributing-guidelines)
 ##### documentation
 ##### files
