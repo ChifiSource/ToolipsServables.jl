@@ -150,16 +150,20 @@ result = write!("", post_style, fadein, mainbod)
 ```
 Finally, `ToolipsServables` also provides parsing for these components via `htmlcomponent`.
 ```julia
-html = ""
+comp = "<div id=\\"sample\\">hello</div>"
+
+htmlcomponent(comp)["sample"]["text"]
+
+"hello"
 ```
 #### contributing guidelines
 There are several ways to contribute to the ParametricProcesses package.
 
-- submitting issues
-- creating dependent packages.
+- submitting [issues](https://github.com/ChifiSource/ToolipsServables.jl/issues)
+- creating packages which use `ToolipsServables`
 - forking and pull-requesting your changes to this code
-- trying other chifi projects.
-- contributing to other chifi projects (gives more attention here).
+- trying other [chifi](https://github.com/ChifiSource) projects.
+- contributing to other [chifi](https:://github.com/ChifiSource) projects (gives more attention here).
 
 We are not super picky on contributions, as the goal of chifi is to get more people involved in computing. However, if you want your code merged there are definitely a few things to be aware of before contributing to this package.
 
