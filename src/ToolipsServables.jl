@@ -241,12 +241,12 @@ function write!(io::String, servables::Servable ...)
 end
 
 function getindex(vs::Vector{<:Servable}, n::String)
-    f = findfirst(c::Servable -> c.name == name, vs)
+    f = findfirst(c::Servable -> c.name == n, vs)
     if ~(isnothing(f))
-        return(vec[f])::Servable
+        return(vs[f])::Servable
     end
-    inside = join((comp.name for comp in vec), "| ")
-    println("component $name not in $inside")
+    inside = join((comp.name for comp in vs), "| ")
+    println("$name not in $inside")
     throw(KeyError(name))
 end
 
