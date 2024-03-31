@@ -165,6 +165,7 @@ result = write!("", post_style, fadein, mainbod)
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy
+using Markdown
 using Base64
 
 """
@@ -609,10 +610,9 @@ end
 
 include("templating.jl")
 include("componentio.jl")
-
+export Servable, Component, AbstractComponent, KeyFrames, File, write!, Style
 export px, pt, per, s, ms, deg, turn, perc
 export rgba, translate, matrix, skew, rotate, scale, translateY, translateX
-export Servable, Component, AbstractComponent, File, write!, Style
 export style!, seconds, percent, set_children!
 export templating, DOCTYPE, h, img, link, meta, input, a, p, h, ul, li
 export br, i, title, span, iframe, svg, h1, h2, h3, h4, h5, h6
@@ -621,4 +621,7 @@ export source, audio, video, table, tr, th, td, style, textdiv
 export keyframes, keyframes!, select, option, options, base64img, textdiv, textbox
 export password, numberinput, rangeslider, checkbox, colorinput, cursor, keyinput
 export from, to, rgba
+export tmd, base64_img, ClientModifier, on, bind, move!, remove!, set_text!, set_children!
+export append!, insert!, sleep!, set_style!, alert!, focus!, blur!, redirect!, redirect_args!
+export next!, update!, update_base64!
 end # module ToolipsServables
