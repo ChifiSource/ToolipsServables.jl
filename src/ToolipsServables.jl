@@ -164,7 +164,7 @@ result = write!("", post_style, fadein, mainbod)
   - `componentmd`
 """
 module ToolipsServables
-import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy
+import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy, insert!, append!
 using Markdown
 using Base64
 
