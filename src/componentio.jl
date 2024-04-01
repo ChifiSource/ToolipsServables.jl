@@ -89,7 +89,10 @@ function htmlcomponent(s::String, readonly::Vector{String})
             argfinish = findnext(">", s, ndtag)[1] + 1
             tg = s[starttag + 1:ndtag - 1]
             finisher = findnext("</$tg", s, argfinish)
-            fulltxt = s[argfinish:finisher[1] - 1]
+            fulltxt::String = ""
+            if ~(isnothing(finisher))
+                fulltxt = s[argfinish:finisher[1] - 1]
+            end
             properties = html_properties(s[ndtag:argfinish - 2])
             name::String = ""
             if "id" in keys(properties)
