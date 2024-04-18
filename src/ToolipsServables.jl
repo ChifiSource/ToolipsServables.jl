@@ -246,8 +246,8 @@ function getindex(vs::Vector{<:Servable}, n::String)
     if ~(isnothing(f))
         return(vs[f])::Servable
     end
-    inside = join((comp.name for comp in vs), "| ")
-    println("$name not in $inside")
+    inside = join((comp.name for comp in vs), "|")
+    println("$n not in $inside")
     throw(KeyError(name))
 end
 

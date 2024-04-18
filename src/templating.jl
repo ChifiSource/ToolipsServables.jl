@@ -350,8 +350,7 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     style!(raw, "display" => "none")
     box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`",
     caret = "0",
-    oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;getCaretIndex$(name)(this);",
-    args ...)
+    oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;", args ...)
     push!(box[:extras], raw)
     return(box)::Component{:div}
 end
@@ -446,9 +445,8 @@ end
 
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
-    input(name, type = "color", value = value,
-    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
-    args ...)::Component{:input}
+    input(name, type = "color", oninput = "\"this.setAttribute('value',this.value);\"", 
+    value = value, p ...; args ...)::Component{:input}
 end
 
 """
@@ -543,8 +541,6 @@ function (:)(sheet::Component{:sheet}, s::StyleComponent ...)
 end
 
 (:)(sheet::Component{:sheet}, s::String, vec::Vector{Pair{String, String}}) = push!(sheet[:children], Style(s, vec ...))
-
-
 
 mutable struct WebMeasure{format} end
 
