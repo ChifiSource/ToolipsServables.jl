@@ -404,7 +404,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
         new{T}(name, properties, tag)
     end
     function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
-        properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+        properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
         [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
     end
@@ -415,14 +415,14 @@ getindex(s::AbstractComponent, symb::String) = s.properties[Symbol(symb)]
 
 setindex!(s::AbstractComponent, a::Any, symb::Symbol) = begin
     if symb in keys(s.properties)
-        return(s.properties[Symbol(symb)]::typeof(a) = a)
+        return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, symb => a)
 end
 
 setindex!(s::AbstractComponent, a::Any, symb::String) = begin
     if Symbol(symb) in keys(s.properties)
-        return(s.properties[Symbol(symb)]::typeof(a) = a)
+        return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, Symbol(symb) => a)
 end
@@ -430,7 +430,11 @@ end
 function propstring(properties::Dict{Symbol, Any})::String
     notupe::Tuple{Symbol, Symbol, Symbol} = (:text, :children, :extras)
    join((begin
-        "$(prop[1])=\"$(prop[2])\"" 
+        if typeof(prop[2]) <: AbstractString && ~(contains(prop[2], "'"))
+            "$(prop[1])='$(prop[2])'" 
+        else
+            "$(prop[1])=$(prop[2])" 
+        end
     end for prop in filter(c -> ~(c[1] in notupe), properties)), " ")
 end
 

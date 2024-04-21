@@ -254,7 +254,7 @@ mysel = select("mainselect", myopts, value = "henry")
 """
 function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
     thedrop = Component{:select}(name, p ..., args ...)
-    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop["oninput"] = "this.setAttribute('value',this.value);"
     thedrop[:children] = options
     thedrop::Component{:select}
 end
@@ -275,7 +275,7 @@ options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt
 
 function select(name::String,  p::Pair{String, <:Any} ...; args ...)
     thedrop = Component{:select}(name, p ...; args ...)
-    thedrop["oninput"] = "\"this.setAttribute('value',this.value);\""
+    thedrop["oninput"] = "this.setAttribute('value',this.value);"
     thedrop::Component{:select}
 end
 
@@ -370,9 +370,7 @@ mybox = textbox("sample", 1:10)
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
     text::String = "", size::Integer = 10, args ...)
     input(name, type = "text", minlength = range[1], maxlength = range[2],
-    value = text, size = size,
-    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
-    args ...)::Component{:input}
+    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
@@ -390,9 +388,7 @@ mybox = textbox("sample", 1:10)
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
     text::String = "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
-    value = text, size = size,
-    oninput = "\"this.setAttribute('value',this.value);\"", p ...;
-    args ...)::Component{:input}
+    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
@@ -410,7 +406,7 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
     ; selected::Integer = 5, args ...)
     input(name, type = "number", min = range[1], max = range[2],
-    selected = selected, oninput = "\"this.setAttribute('selected',this.value);\"", p ...;
+    selected = selected, oninput = "this.setAttribute('selected',this.value);", p ...;
     args ...)::Component{:input}
 end
 
@@ -430,7 +426,7 @@ function rangeslider(name::String, range::UnitRange = 1:100,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "\"this.setAttribute('value',this.value);\"", p ...; args ...)
+            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)
 end
 
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
@@ -445,7 +441,7 @@ end
 
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
-    input(name, type = "color", oninput = "\"this.setAttribute('value',this.value);\"", 
+    input(name, type = "color", oninput = "this.setAttribute('value',this.value);", 
     value = value, p ...; args ...)::Component{:input}
 end
 
