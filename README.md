@@ -3,6 +3,8 @@
 <img src="https://github.com/ChifiSource/image_dump/blob/main/toolips/toolipsservables.png?raw=true" width="300"></img>
 
 [![version](https://juliahub.com/docs/General/ToolipsServables/stable/version.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables)
+[![deps](https://juliahub.com/docs/General/ToolipsServables/stable/deps.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables?t=2)
+[![pkgeval](https://juliahub.com/docs/General/ToolipsServables/stable/pkgeval.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables)
 
 </div>
 
