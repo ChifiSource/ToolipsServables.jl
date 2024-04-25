@@ -280,10 +280,11 @@ mutable struct File{T <: Any} <: Servable
     path::String
     function File(dir::String)
         dir = replace(dir, "\\" => "/")
-        ftsplit = split(dir, ".")
-        fending = join(ftsplit[2:length(ftsplit)])
-        nsplit = split(dir, "/")
-        new{Symbol(fending)}(string(nsplit[length(nsplit)]), join(nsplit[1:length(nsplit) - 1], "/"))::File
+        nsplit::Vector{SubString} = split(dir, "/")
+        name::String = string(nsplit[length(nsplit)])
+        ftsplit::Vector{SubString} = split(name, ".")
+        fending::String = join(ftsplit[2:length(ftsplit)])
+        new{Symbol(fending)}(name, join(nsplit[1:length(nsplit) - 1], "/"))::File
     end
 end
 
