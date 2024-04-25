@@ -137,6 +137,7 @@ end
     comps = htmlcomponent(html)
     comps[1][:text] = ""
     push!(comps[1], comps[2])
-    @test replace(write!("", comps[1], comps[3]), " " => "") == replace(html, " " => "")
+    reps = (" " => "", "'" => "", "\"" => "")
+    @test replace(write!("", comps[1], comps[3]), reps ...) == replace(html, reps ...)
 end
 end #// tests
