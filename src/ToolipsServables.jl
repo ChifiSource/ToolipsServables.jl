@@ -280,10 +280,11 @@ mutable struct File{T <: Any} <: Servable
     path::String
     function File(dir::String)
         dir = replace(dir, "\\" => "/")
-        ftsplit = split(dir, ".")
-        fending = join(ftsplit[2:length(ftsplit)])
-        nsplit = split(dir, "/")
-        new{Symbol(fending)}(string(nsplit[length(nsplit)]), join(nsplit[1:length(nsplit) - 1], "/"))::File
+        nsplit::Vector{SubString} = split(dir, "/")
+        name::String = string(nsplit[length(nsplit)])
+        ftsplit::Vector{SubString} = split(name, ".")
+        fending::String = join(ftsplit[2:length(ftsplit)])
+        new{Symbol(fending)}(name, join(nsplit[1:length(nsplit) - 1], "/"))::File
     end
 end
 
@@ -404,7 +405,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
         new{T}(name, properties, tag)
     end
     function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
-        properties = Dict{Symbol, Any}([Symbol(prop[1]) => string(prop[2]) for prop in properties])
+        properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
         [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
     end
@@ -415,14 +416,14 @@ getindex(s::AbstractComponent, symb::String) = s.properties[Symbol(symb)]
 
 setindex!(s::AbstractComponent, a::Any, symb::Symbol) = begin
     if symb in keys(s.properties)
-        return(s.properties[Symbol(symb)]::typeof(a) = a)
+        return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, symb => a)
 end
 
 setindex!(s::AbstractComponent, a::Any, symb::String) = begin
     if Symbol(symb) in keys(s.properties)
-        return(s.properties[Symbol(symb)]::typeof(a) = a)
+        return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, Symbol(symb) => a)
 end
@@ -430,7 +431,11 @@ end
 function propstring(properties::Dict{Symbol, Any})::String
     notupe::Tuple{Symbol, Symbol, Symbol} = (:text, :children, :extras)
    join((begin
-        "$(prop[1])=\"$(prop[2])\"" 
+        if typeof(prop[2]) <: AbstractString && ~(contains(prop[2], "'"))
+            "$(prop[1])='$(prop[2])'" 
+        else
+            "$(prop[1])=$(prop[2])" 
+        end
     end for prop in filter(c -> ~(c[1] in notupe), properties)), " ")
 end
 
@@ -438,7 +443,7 @@ string(comp::Component{<:Any}) = begin
     text::String = comp.properties[:text]
     children = string(comp[:children])
     extras = string(comp[:extras])
-    "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
+    "$extras<$(comp.tag) id='$(comp.name)' $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
 end
 
 function copy(c::Component{<:Any})
