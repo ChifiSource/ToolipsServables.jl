@@ -443,7 +443,7 @@ string(comp::Component{<:Any}) = begin
     text::String = comp.properties[:text]
     children = string(comp[:children])
     extras = string(comp[:extras])
-    "$extras<$(comp.tag) id=\"$(comp.name)\" $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
+    "$extras<$(comp.tag) id='$(comp.name)' $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String
 end
 
 function copy(c::Component{<:Any})

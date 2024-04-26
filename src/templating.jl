@@ -859,7 +859,7 @@ end
 
 function on(f::Function, event::String)
     cl = ClientModifier(); f(cl)
-    scrpt = """addEventListener("$event", $(funccl(cl)));"""
+    scrpt = """addEventListener('$event', $(funccl(cl)));"""
     script("doc$event", text = scrpt)
 end
 
