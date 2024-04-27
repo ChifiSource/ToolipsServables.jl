@@ -406,7 +406,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
     end
     function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
         properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
-        [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
+        [push!(properties, Symbol(prop[1]) => prop[2]) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
     end
 end
