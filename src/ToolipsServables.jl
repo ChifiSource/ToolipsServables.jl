@@ -530,7 +530,7 @@ string(comp::Style) = begin
         extras = join(string(comp) for comp in properties[:extras])
     end
     spairs = join(("$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)), ";")
-    "$(extras) <style id=\"$name\">$name {$(spairs);}</style>"
+    "$(extras) <style id='$name'>$name {$(spairs);}</style>"
 end
 
 """
@@ -588,7 +588,7 @@ function string(anim::KeyFrames)
     props::String = join(begin
         "$(prop[1]) {$(prop[2])}"
     end for prop in properties)
-    """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
+    """<style id='$(anim.name)'>@keyframes $(anim.name){$(props)}</style>"""
 end
 
 function show(io::Base.TTY, c::AbstractComponent)
