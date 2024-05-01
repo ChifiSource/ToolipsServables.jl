@@ -39,7 +39,7 @@ end
 @testset "templating" verbose = true begin
     comp = div("sample", text = "example")
     @testset "component templating" begin
-        @test string(comp) == "<div id=\"sample\" >example</div>"
+        @test string(comp) == "<div id='sample' >example</div>"
         father = body("bod")
         push!(father, comp)
         @test father[:children][1].name == comp.name
@@ -88,7 +88,7 @@ end
             @test tbox[:type] == "password"
             numinput = ToolipsServables.numberinput("sample", 1:50, selected = 15)
             @test typeof(numinput) == Component{:input}
-            @test numinput[:selected] == string(15)
+            @test string(numinput[:selected]) == string(15)
             r = rangeslider("sample")
             @test r.name == "sample"
             @test r["type"] == "range"
@@ -127,8 +127,8 @@ end
         io = IOBuffer()
         comp = div("sample", text = "example")
         write!(io, comp, comp)
-        @test contains(String(io.data), "id=\"sample\"")
-        @test string(comp) == "<div id=\"sample\" >example</div>"
+        @test contains(String(io.data), "id='sample'")
+        @test string(comp) == "<div id='sample' >example</div>"
     end
 end 
 

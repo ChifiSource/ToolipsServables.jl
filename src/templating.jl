@@ -106,7 +106,9 @@ const h4 = Component{:h4}
 const h6 = Component{:h6}
 const element = Component{:element}
 const label = Component{:label}
-const script = Component{:script}
+function script(name::String = "-", args ...; keyargs ...)
+    Component{:script}(name, args ...; keyargs ...)
+end
 const nav = Component{:nav}
 const button = Component{:button}
 const form = Component{:form}
@@ -657,6 +659,10 @@ For server-side responses, add `ToolipsSession` and use the `ComponentModifier`.
 """
 abstract type AbstractComponentModifier <: Modifier end
 
+script(cl::AbstractComponentModifier) = begin
+    script(cl.name, text = join(cl.changes))
+end
+
 setindex!(cm::AbstractComponentModifier, p::Pair, s::Any) = begin
     if typeof(s) <: AbstractComponent
         s = s.name
@@ -733,6 +739,12 @@ mutable struct ClientModifier <: AbstractClientModifier
     ClientModifier(name::String = "sample") = begin
         new(name, Vector{String}())::ClientModifier
     end
+end
+
+function script(f::Function, s::String = gen_ref(5))
+    cl = ClientModifier(s)
+    f(cl)
+    script(cl.name, text = funccl(cl))::Component{:script}
 end
 
 #== do you understand now?

@@ -406,7 +406,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
     end
     function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
         properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
-        [push!(properties, Symbol(prop[1]) => string(prop[2])) for prop in args]
+        [push!(properties, Symbol(prop[1]) => prop[2]) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
     end
 end
@@ -530,7 +530,7 @@ string(comp::Style) = begin
         extras = join(string(comp) for comp in properties[:extras])
     end
     spairs = join(("$(p[1]):$(p[2])" for p in filter!(p -> p[1] != :extras, properties)), ";")
-    "$(extras) <style id=\"$name\">$name {$(spairs);}</style>"
+    "$(extras) <style id='$name'>$name {$(spairs);}</style>"
 end
 
 """
@@ -588,7 +588,7 @@ function string(anim::KeyFrames)
     props::String = join(begin
         "$(prop[1]) {$(prop[2])}"
     end for prop in properties)
-    """<style id="$(anim.name)">@keyframes $(anim.name){$(props)}</style>"""
+    """<style id='$(anim.name)'>@keyframes $(anim.name){$(props)}</style>"""
 end
 
 function show(io::Base.TTY, c::AbstractComponent)
