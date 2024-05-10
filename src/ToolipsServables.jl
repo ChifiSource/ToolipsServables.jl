@@ -182,6 +182,12 @@ comes with two `Servable` types,
 """
 abstract type Servable end
 
+function gen_ref(n::Int64 = 16)
+    sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+    samps = (rand(1:length(sampler)) for i in 1:n)
+    join(sampler[samp] for samp in samps)
+end
+
 """
 ```julia
 Servables{T} (alias for Vector{T} where {T <: Servable})
@@ -592,11 +598,11 @@ function string(anim::KeyFrames)
 end
 
 function show(io::Base.TTY, c::AbstractComponent)
-    show(io, MIME"text/html"(), string(mdcomponent(c)))
+    show(io, MIME"text/markdown"(), string(mdcomponent(c)))
 end
 
 function show(io::Base.TTY, c::StyleComponent)
-    println("$(c.name) $(typeof(c))\n")
+    println("$(c.name) $(typeof(c))")
 end
 
 function show(io::IO, f::File)
