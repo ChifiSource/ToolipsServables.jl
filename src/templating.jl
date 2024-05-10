@@ -736,7 +736,7 @@ end
 mutable struct ClientModifier <: AbstractClientModifier
     name::String
     changes::Vector{String}
-    ClientModifier(name::String = "sample") = begin
+    ClientModifier(name::String = gen_ref(5)) = begin
         new(name, Vector{String}())::ClientModifier
     end
 end
