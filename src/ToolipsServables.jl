@@ -185,7 +185,6 @@ abstract type Servable end
 sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
 
 function gen_ref(n::Int64 = 16) 
-    @info "new used"
     samps = (rand(1:length(sampler)) for i in 1:n)
     join(sampler[samp] for samp in samps)
 end

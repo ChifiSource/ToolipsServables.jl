@@ -1511,21 +1511,3 @@ function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
     mysrc::String = String(io.data)
     cm[name] = "src" => "data:image/$filetype;base64," * mysrc
 end
-
-next_transition!(cl::ClientModifier, name::String, gen::AbstractVector, e::Int64) = begin
-    if e > length(gen)
-        return
-    end
-    style!(cl, name, "transition" => gen[e][1], gen[e][2] ...)
-    next!(cl, name) do cl2
-        next_transition!(cl2, name, gen, e + 1)
-    end
-end
-
-function transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...)
-    gen = [pair for pair in tpairs]
-    e = 1
-    next!(cl, comp.name) do cl2
-        next_transition!(cl, comp.name, gen, e)
-    end
-end
