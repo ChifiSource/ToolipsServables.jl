@@ -182,8 +182,10 @@ comes with two `Servable` types,
 """
 abstract type Servable end
 
-function gen_ref(n::Int64 = 16)
-    sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+
+function gen_ref(n::Int64 = 16) 
+    @info "new used"
     samps = (rand(1:length(sampler)) for i in 1:n)
     join(sampler[samp] for samp in samps)
 end
