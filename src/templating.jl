@@ -132,6 +132,28 @@ push!(s::AbstractComponent, d::AbstractComponent ...) = push!(s[:children], d ..
 
 """
 ```julia
+compress!(comp::AbstractComponent) -> ::Nothing
+```
+`compress!` will turn the `:children` of a given `Component` into its `:text`, 
+resulting in the same `Component` with less memory usage. The trade-off to this is 
+that we can no longer pull elements from the children.
+---
+```example
+comp = body("example-body")
+push!(comp, [div("sample", text = "hello", align = "center") for x in 1:1000])
+# sizeof(comp)
+compress!(comp)
+# sizeof(comp)
+```
+"""
+function compress!(comp::AbstractComponent)
+    comp[:text] = comp[:text] * string(comp[:children])
+    comp[:children] = Vector{AbstractComponent}()
+    nothing::Nothing
+end
+
+"""
+```julia
 set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
 ```
 `set_children!` sets the children of `comp` to `children`. Children can be accessed 
@@ -146,7 +168,7 @@ set_children!(comp, [mainheader, greeter])
 """
 set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) = begin
     comp[:children] = Vector{AbstractComponent}(children)
-    nothing
+    nothing::Nothing
 end
 
 const style = Style
@@ -611,8 +633,8 @@ const ms = WebMeasure{:ms}()
 const deg = WebMeasure{:deg}()
 const turn = WebMeasure{:turn}()
 # colors and transforms
-function rgba(r::Number, g::Number, b::Number, a::Float64)
-    "rgb($r $g $b $a / a)"
+function rgba(r::Number, g::Number, b::Number, a::Number = 1.0)
+    "rgb($r,$g,$b,$a)"::String
 end
 
 const from = "from"
@@ -1376,6 +1398,61 @@ function next!(f::Function, cl::AbstractComponentModifier, comp::Any)
     f(newcl)
     push!(cl.changes,
     "document.getElementById('$comp').addEventListener('transitionend', $(funccl(newcl)));")
+    nothing::Nothing
+end
+
+next_transition!(cl::ClientModifier, name::String, gen::AbstractVector, e::Int64) = begin
+    if e > length(gen)
+        return
+    end
+    style!(cl, name, "transition" => gen[e][1], gen[e][2] ...)
+    next!(cl, name) do cl2
+        next_transition!(cl2, name, gen, e + 1)
+    end
+end
+
+"""
+```julia
+transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...) -> ::Nothing
+```
+Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a `Pair{String, Vector{String}}`. 
+    The keys of the pairs will be time increments, likely using `s` or `ms`, and the values will be 
+    the styles associated with that portion of the animation.
+```example
+newcomp = Gattino.div("sss")
+style!(newcomp, "width" => 200px, "height" => 200px, "background-color" => "green")
+on(newcomp, "click") do cl::ClientModifier
+    style!(cl, newcomp, "width" => 100px)
+    transition!(cl, newcomp,
+        ["2s" => ["background-color" => "orange"],
+        "2s" => ["height" => 199px],
+        "4s" => ["background-color" => "red"],
+        "2s" => ["width" => 200px],
+        "1s" => ["background-color" => "green"]] ... )
+end
+```
+Note that some style has to change, but it can be arbitrary.
+```julia
+newcomp = Gattino.div("sss")
+style!(newcomp, "width" => 200px, "height" => 200px, "background-color" => "green")
+on(newcomp, "click") do cl::ClientModifier
+    style!(cl, newcomp, "width" => 100px)
+    transition!(cl, newcomp,
+        ["2s" => ["background-color" => "orange"],
+        "1500ms" => ["stroke" => 5px], # pause
+        "2s" => ["height" => 199px],
+        "4s" => ["background-color" => "red"],
+        "2s" => ["width" => 200px],
+        "1s" => ["background-color" => "green"]] ... )
+end
+```
+"""
+function transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...)
+    gen = [pair for pair in tpairs]
+    e = 1
+    next!(cl, comp.name) do cl2
+        next_transition!(cl, comp.name, gen, e)
+    end
     nothing::Nothing
 end
 

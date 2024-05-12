@@ -182,8 +182,9 @@ comes with two `Servable` types,
 """
 abstract type Servable end
 
-function gen_ref(n::Int64 = 16)
-    sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+
+function gen_ref(n::Int64 = 16) 
     samps = (rand(1:length(sampler)) for i in 1:n)
     join(sampler[samp] for samp in samps)
 end
@@ -254,7 +255,7 @@ function getindex(vs::Vector{<:Servable}, n::String)
     end
     inside = join((comp.name for comp in vs), "|")
     println("$n not in $inside")
-    throw(KeyError(name))
+    throw(KeyError(n))
 end
 
 """
