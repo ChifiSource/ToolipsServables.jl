@@ -134,3 +134,69 @@ end
 function componentmd(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]
 end
+
+"""
+```julia
+interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...; keyargs ...) -> ::Nothing
+interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) -> ::Nothing
+```
+Interpolates markdown inside the `:text` of a `div` (typically created using `tmd`). 
+The `Component{<:Any}` and key-word argument dispatch will interpolate in-line code blocks, as well 
+as values with a `%` before them. The latter function will take a series of strings paired with functions. 
+
+The functions will be passed the `String` of a code block, the return is another `String` -- the result.
+---
+```example
+
+
+```
+"""
+function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...; keyargs ...)
+    replace_names = vcat([comp.name for comp in components], [string(arg[1]) for arg in keyargs])
+    gen_dct = Dict{String, Any}(comp.name => comp for comp in components)
+    [push!(gen_dct, string(arg[1]) => string(arg[2])) for arg in keyargs]
+    mdcomp = tmd("hello", read("mdfile.md", String))
+    raw::String = mdcomp[:text]
+    [begin
+        key = name_object[1]
+        positions = vcat([k[1] - 1:maximum(k) + 1 for k in findall("<code>$key</code>", raw)],
+         [k[1] - 1:maximum(k) + 1 for k in findall("&#37;$key", raw)])
+        [begin
+            raw = raw[1:minimum(pos)] * string(name_object[2]) * raw[maximum(pos):length(raw)]
+        end for pos in positions]
+    end for name_object in gen_dct]
+    mdcomp[:text] = raw
+    nothing::Nothing
+end
+
+interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
+    raw::String = comp[:text]
+    [begin
+        name::String = name_func[1]
+        f::Function = name_func[2]
+        positions = findall("<code class=\"language-$name\">", raw) 
+        [begin
+            elmax = maximum(position) + 1
+            final_c = findnext("</code>", raw, elmax)
+            section_end = minimum(final_c)
+            section::String = raw[elmax:(section_end - 1)]
+            section = f(section)
+            raw = raw[1:minimum(position) - 1] * section * raw[maximum(final_c) + 1:length(raw)]
+        end for position in positions]
+    end for name_func in fillfuncs]
+    comp[:text] = raw
+    nothing::Nothing
+end
+
+function interpolate(f::File{:html}, components::AbstractComponent ...; args ...)
+    rawfile::String = read(dir, String)
+    [begin
+        rawc = string(comp)
+        rawfile = replace(rawfile, "\$$(comp.name)" => rawc)
+    end for comp in components]
+    [begin
+        rawfile = replace(rawfile, "\$$(arg[1])" => arg[2])
+    end for arg in args]
+    write!(c, rawfile)
+    string(rawfile)
+end

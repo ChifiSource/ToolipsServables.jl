@@ -357,6 +357,9 @@ function base64img(name::String, raw::Any, filetype::String = "png",
     args ...)::Component{:img}
 end
 
+# to make this work for strings:
+show(b::Base64.Base64EncodePipe, m::MIME{<:Any}, s::AbstractString) = write(b, s)
+
 """
 ```julia
 textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "", keyargs ...) -> ::Component{:div}
