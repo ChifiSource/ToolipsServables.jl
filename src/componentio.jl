@@ -155,7 +155,6 @@ function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...;
     replace_names = vcat([comp.name for comp in components], [string(arg[1]) for arg in keyargs])
     gen_dct = Dict{String, Any}(comp.name => comp for comp in components)
     [push!(gen_dct, string(arg[1]) => string(arg[2])) for arg in keyargs]
-    mdcomp = tmd("hello", read("mdfile.md", String))
     raw::String = mdcomp[:text]
     [begin
         key = name_object[1]
