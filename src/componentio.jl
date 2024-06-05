@@ -157,7 +157,7 @@ function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...;
     [push!(gen_dct, string(arg[1]) => string(arg[2])) for arg in keyargs]
     raw::String = mdcomp[:text]
     raw = replace(raw, ("<code>$(name_object[1])</code>" => name_object[2] for name_object in gen_dct) ..., 
-    ("&#37;$(name_object[1])" => name_object[2] for name_object in gen_dct ...))
+    ("&#37;$(name_object[1])" => name_object[2] for name_object in gen_dct) ...)
     mdcomp[:text] = raw
     nothing::Nothing
 end
@@ -185,7 +185,7 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
     nothing::Nothing
 end
 
-function interpolate(f::File{:html}, components::AbstractComponent ...; args ...)
+function interpolate!(f::File{:html}, components::AbstractComponent ...; args ...)
     rawfile::String = read(dir, String)
     [begin
         rawc = string(comp)
