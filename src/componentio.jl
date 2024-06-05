@@ -153,17 +153,11 @@ The functions will be passed the `String` of a code block, the return is another
 """
 function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...; keyargs ...)
     replace_names = vcat([comp.name for comp in components], [string(arg[1]) for arg in keyargs])
-    gen_dct = Dict{String, Any}(comp.name => comp for comp in components)
+    gen_dct = Dict{String, Any}(comp.name => string(comp) for comp in components)
     [push!(gen_dct, string(arg[1]) => string(arg[2])) for arg in keyargs]
     raw::String = mdcomp[:text]
-    [begin
-        key = name_object[1]
-        positions = vcat([k[1] - 1:maximum(k) + 1 for k in findall("<code>$key</code>", raw)],
-         [k[1] - 1:maximum(k) + 1 for k in findall("&#37;$key", raw)])
-        [begin
-            raw = raw[1:minimum(pos)] * string(name_object[2]) * raw[maximum(pos):length(raw)]
-        end for pos in positions]
-    end for name_object in gen_dct]
+    raw = replace(raw, ("<code>$(name_object[1])</code>" => name_object[2] for name_object in gen_dct) ..., 
+    ("&#37;$(name_object[1])" => name_object[2] for name_object in gen_dct ...))
     mdcomp[:text] = raw
     nothing::Nothing
 end
@@ -173,14 +167,18 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
     [begin
         name::String = name_func[1]
         f::Function = name_func[2]
-        positions = findall("<code class=\"language-$name\">", raw) 
+        positions = findall("<code class=\"language-$name\">", raw)
+        offset::Int64 = 0
         [begin
             elmax = maximum(position) + 1
-            final_c = findnext("</code>", raw, elmax)
+            final_c = findnext("</code>", raw, elmax + offset)
             section_end = minimum(final_c)
             section::String = raw[elmax:(section_end - 1)]
+            n::Int64 = length(section)
             section = f(section)
-            raw = raw[1:minimum(position) - 1] * section * raw[maximum(final_c) + 1:length(raw)]
+            diff = length(section) - n
+            offset += diff
+            raw = raw[1:minimum(position) - 1 + offset] * section * raw[maximum(final_c) + 1 + offset:length(raw)]
         end for position in positions]
     end for name_func in fillfuncs]
     comp[:text] = raw
