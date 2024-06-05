@@ -177,8 +177,8 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
             n::Int64 = length(section)
             section = f(section)
             diff = length(section) - n
-            offset += diff
             raw = raw[1:minimum(position) - 1 + offset] * section * raw[maximum(final_c) + 1 + offset:length(raw)]
+            offset += diff
         end for position in positions]
     end for name_func in fillfuncs]
     comp[:text] = raw
