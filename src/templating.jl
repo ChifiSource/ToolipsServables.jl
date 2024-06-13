@@ -497,12 +497,14 @@ end
 ```
 """
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
-    cursor_updater = Component{:cursor}(name, p ..., tag = "script"; args ...)
-    cursor_updater["x"], cursor_updater["y"] = 1, 1
+    cursor_updater = Component{:cursor}(name, p ..., tag = "script", x = 1, y = 1, scrolly = 1, scrollx = 1; args ...)
     cursor_updater[:text] = """
     function updatecursor(event) {
         document.getElementById("$name").setAttribute("x", event.clientX);
-        document.getElementById("$name").setAttribute("y", event.clientY);}
+        document.getElementById("$name").setAttribute("y", event.clientY);
+        document.getElementById("$name").setAttribute("scrollx", document.getElementById("canvas").scrollLeft);
+        document.getElementById("$name").setAttribute("scrolly", document.getElementById("canvas").scrollTop);
+        }
     document.getElementsByTagName("body")[0].addEventListener("mousemove", updatecursor);
    """
    cursor_updater::Component{:cursor}
