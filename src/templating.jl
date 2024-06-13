@@ -502,8 +502,8 @@ function cursor(name::String, p::Pair{String, Any} ...; args ...)
     function updatecursor(event) {
         document.getElementById("$name").setAttribute("x", event.clientX);
         document.getElementById("$name").setAttribute("y", event.clientY);
-        document.getElementById("$name").setAttribute("scrollx", document.getElementById("canvas").scrollLeft);
-        document.getElementById("$name").setAttribute("scrolly", document.getElementById("canvas").scrollTop);
+        document.getElementById("$name").setAttribute("scrollx", window.scrollX);
+        document.getElementById("$name").setAttribute("scrolly", window.scrollY);
         }
     document.getElementsByTagName("body")[0].addEventListener("mousemove", updatecursor);
    """
