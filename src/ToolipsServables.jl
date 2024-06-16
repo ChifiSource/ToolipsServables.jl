@@ -635,5 +635,5 @@ export password, numberinput, rangeslider, checkbox, colorinput, cursor, keyinpu
 export from, to, rgba
 export tmd, base64_img, ClientModifier, on, bind, move!, remove!, set_text!, set_children!
 export append!, insert!, sleep!, set_style!, alert!, focus!, blur!, redirect!, redirect_args!
-export next!, update!, update_base64!, interpolate, interpolate!
+export next!, update!, update_base64!, interpolate, interpolate!, compress!
 end # module ToolipsServables

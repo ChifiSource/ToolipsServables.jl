@@ -167,19 +167,20 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
     [begin
         name::String = name_func[1]
         f::Function = name_func[2]
-        positions = findall("<code class=\"language-$name\">", raw)
-        offset::Int64 = 0
-        [begin
+        at::Int64 = 1
+        while true
+            position = findnext("<code class=\"language-$name\">", raw, at)
+            if isnothing(position)
+                break
+            end
             elmax = maximum(position) + 1
-            final_c = findnext("</code>", raw, elmax + offset)
-            section_end = minimum(final_c)
-            section::String = raw[elmax:(section_end - 1)]
-            n::Int64 = length(section)
+            final_c = findnext("</code>", raw, elmax)
+            section_end = minimum(final_c) - 1
+            section::String = raw[elmax:section_end]
             section = f(section)
-            diff = length(section) - n
-            raw = raw[1:minimum(position) - 1 + offset] * section * raw[maximum(final_c) + 1 + offset:length(raw)]
-            offset += diff
-        end for position in positions]
+            raw = raw[1:minimum(position) - 1] * section * raw[maximum(final_c) + 1:length(raw)]
+            at += length(section)
+        end
     end for name_func in fillfuncs]
     comp[:text] = raw
     nothing::Nothing
