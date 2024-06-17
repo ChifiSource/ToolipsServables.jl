@@ -71,10 +71,6 @@ result = write!("", post_style, fadein, mainbod)
 - `KeyFrames` <: `AbstractAnimation`
 
 ###### templating
-- `templating` (`?templating`)
-- `style_properties` (`?style_properties`)
-- `arguments` (`?arguments`)
-- `Components` (`?Components`)
   - `img`
   - `link`
   - `meta`
@@ -162,6 +158,8 @@ result = write!("", post_style, fadein, mainbod)
   - `componenthtml`
   - `md_string`
   - `componentmd`
+  - `interpolate`
+  - `interpolate!`
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy, insert!, append!

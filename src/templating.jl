@@ -1312,7 +1312,12 @@ home = route("/") do c::Connection
 end
 ```
 """
-function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0)
+function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; new_tab::Bool = false)
+    if new_tab
+        push!(cm.changes, """setTimeout(
+        function () {window.open('$url', '_blank').focus();}, $delay);""")
+        return
+    end
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url";}, $delay);""")
 end
