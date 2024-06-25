@@ -71,10 +71,6 @@ result = write!("", post_style, fadein, mainbod)
 - `KeyFrames` <: `AbstractAnimation`
 
 ###### templating
-- `templating` (`?templating`)
-- `style_properties` (`?style_properties`)
-- `arguments` (`?arguments`)
-- `Components` (`?Components`)
   - `img`
   - `link`
   - `meta`
@@ -162,6 +158,8 @@ result = write!("", post_style, fadein, mainbod)
   - `componenthtml`
   - `md_string`
   - `componentmd`
+  - `interpolate`
+  - `interpolate!`
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy, insert!, append!
@@ -209,7 +207,7 @@ string(s::Servables) = join(string(serv) for serv in s)
 """
 ```julia
 write!(io, args ...) -> _
-````
+```
 The `write` `Function` is used to `write!` `Servables` to 
 a `<: IO` or a `String`.
 ```julia
@@ -217,7 +215,7 @@ write!(io::IO, servables::Servable ...) -> ::Nothing
 write!(io::String, servables::Servable ...) -> ::String
 ```
 ---
-```example
+```julia
 using ToolipsServables
 # write candidate
 str_sample = ""
@@ -635,5 +633,5 @@ export password, numberinput, rangeslider, checkbox, colorinput, cursor, keyinpu
 export from, to, rgba
 export tmd, base64_img, ClientModifier, on, bind, move!, remove!, set_text!, set_children!
 export append!, insert!, sleep!, set_style!, alert!, focus!, blur!, redirect!, redirect_args!
-export next!, update!, update_base64!
+export next!, update!, update_base64!, interpolate, interpolate!, compress!
 end # module ToolipsServables

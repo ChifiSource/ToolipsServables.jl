@@ -318,7 +318,7 @@ comp = tmd("mygreeting", mymd)
 """
 function tmd(name::String, s::String = "", p::Pair{String, <:Any} ...;
     args ...)
-    md = Markdown.parse(replace(s, "<" => "", ">" => "", "\"" => ""))
+    md = Markdown.parse(replace(s * "\n", "<" => "", ">" => "", "\"" => ""))
     htm::String = html(md)
     div(name, text = htm, p ...; args ...)::Component{:div}
 end
@@ -356,6 +356,9 @@ function base64img(name::String, raw::Any, filetype::String = "png",
     img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
     args ...)::Component{:img}
 end
+
+# to make this work for strings:
+show(b::Base64.Base64EncodePipe, m::MIME{<:Any}, s::AbstractString) = write(b, s)
 
 """
 ```julia
@@ -494,12 +497,14 @@ end
 ```
 """
 function cursor(name::String, p::Pair{String, Any} ...; args ...)
-    cursor_updater = Component{:cursor}(name, p ..., tag = "script"; args ...)
-    cursor_updater["x"], cursor_updater["y"] = 1, 1
+    cursor_updater = Component{:cursor}(name, p ..., tag = "script", x = 1, y = 1, scrolly = 1, scrollx = 1; args ...)
     cursor_updater[:text] = """
     function updatecursor(event) {
         document.getElementById("$name").setAttribute("x", event.clientX);
-        document.getElementById("$name").setAttribute("y", event.clientY);}
+        document.getElementById("$name").setAttribute("y", event.clientY);
+        document.getElementById("$name").setAttribute("scrollx", window.scrollX);
+        document.getElementById("$name").setAttribute("scrolly", window.scrollY);
+        }
     document.getElementsByTagName("body")[0].addEventListener("mousemove", updatecursor);
    """
    cursor_updater::Component{:cursor}
@@ -1307,7 +1312,12 @@ home = route("/") do c::Connection
 end
 ```
 """
-function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0)
+function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; new_tab::Bool = false)
+    if new_tab
+        push!(cm.changes, """setTimeout(
+        function () {window.open('$url', '_blank').focus();}, $delay);""")
+        return
+    end
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url";}, $delay);""")
 end
