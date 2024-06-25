@@ -207,7 +207,7 @@ string(s::Servables) = join(string(serv) for serv in s)
 """
 ```julia
 write!(io, args ...) -> _
-````
+```
 The `write` `Function` is used to `write!` `Servables` to 
 a `<: IO` or a `String`.
 ```julia
@@ -215,7 +215,7 @@ write!(io::IO, servables::Servable ...) -> ::Nothing
 write!(io::String, servables::Servable ...) -> ::String
 ```
 ---
-```example
+```julia
 using ToolipsServables
 # write candidate
 str_sample = ""

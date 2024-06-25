@@ -182,7 +182,21 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
             section_end = minimum(final_c) - 1
             section::String = raw[elmax:section_end]
             section = f(section)
-            raw = raw[1:minimum(position) - 1] * section * raw[section_end + 1:length(raw)]
+            # sometimes i h8 utf-8
+            try
+                raw = raw[1:minimum(position) - 1] * section * raw[section_end + 1:length(raw)]
+            catch
+                try
+                    raw = raw[1:minimum(position) - 2] * section * raw[section_end + 1:length(raw)]
+                catch
+                    try
+                        raw = raw[1:minimum(position) - 1] * section * raw[section_end - 1:length(raw)]
+                    catch
+                        at = maximum(position)
+                        continue
+                    end
+                end
+            end
             at += length(section)
         end
     end for name_func in fillfuncs]
