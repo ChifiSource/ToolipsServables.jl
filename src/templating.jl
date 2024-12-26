@@ -902,6 +902,14 @@ function on(f::Function, event::String)
     script("doc$event", text = scrpt)
 end
 
+function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
+    time::Integer = 1000)
+    mod = ClientModifier()
+    f(mod)
+    push!(cm.changes,
+    "new Promise(resolve => setTimeout($(funccl(mod, name)), $time));")
+end
+
 """
 ```julia
 bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :down) -> ::Component{:script}
