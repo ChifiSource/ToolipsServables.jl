@@ -276,7 +276,7 @@ myopts = options("emmy", "henry", "jessica")
 mysel = select("mainselect", myopts, value = "henry")
 ```
 """
-function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
+function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; args ...)
     thedrop = Component{:select}(name, p ..., args ...)
     thedrop["oninput"] = "this.setAttribute('value',this.value);"
     thedrop[:children] = options

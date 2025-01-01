@@ -119,7 +119,7 @@ result = write!("", post_style, fadein, mainbod)
 - `numberinput`
 - `rangeslider`
 - `option`
-- `dropdown`
+- `select`
 - `checkbox`
 - `colorinput`
 - `progress`
