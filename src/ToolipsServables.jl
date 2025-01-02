@@ -597,7 +597,7 @@ function string(anim::KeyFrames)
 end
 
 function show(io::Base.TTY, c::AbstractComponent)
-    show(io, MIME"text/markdown"(), string(mdcomponent(c)))
+    show(io, MIME"text/plain"(), c.name * join(string(prop) for prop in c.properties))
 end
 
 function show(io::Base.TTY, c::StyleComponent)
