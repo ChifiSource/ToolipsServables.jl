@@ -276,7 +276,7 @@ myopts = options("emmy", "henry", "jessica")
 mysel = select("mainselect", myopts, value = "henry")
 ```
 """
-function select(name::String, options::Vector{<:AbstractComponent}, p::Pair{String, <:Any} ...; args ...)
+function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; args ...)
     thedrop = Component{:select}(name, p ..., args ...)
     thedrop["oninput"] = "this.setAttribute('value',this.value);"
     thedrop[:children] = options
@@ -382,6 +382,72 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     return(box)::Component{:div}
 end
 
+function textdiv_caret_tracker!(comp::Component{:div})
+    name = comp.name
+    caretpos = script("caretposition", text = """
+    function getCaretIndex$(name)(element) {
+  let position = 0;
+  const isSupported = typeof window.getSelection !== "undefined";
+  if (isSupported) {
+    const selection = window.getSelection();
+    if (selection.rangeCount !== 0) {
+      const range = window.getSelection().getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(element);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      position = preCaretRange.toString().length;
+    }
+  }
+  document.getElementById('$name').setAttribute('caret',position);
+}
+function createRange(node, chars, range) {
+    if (!range) {
+        range = document.createRange()
+        range.selectNode(node);
+        range.setStart(node, 0);
+    }
+
+    if (chars.count === 0) {
+        range.setEnd(node, chars.count);
+    } else if (node && chars.count >0) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.textContent.length < chars.count) {
+                chars.count -= node.textContent.length;
+            } else {
+                 range.setEnd(node, chars.count);
+                 chars.count = 0;
+            }
+        } else {
+            for (var lp = 0; lp < node.childNodes.length; lp++) {
+                range = createRange(node.childNodes[lp], chars, range);
+
+                if (chars.count === 0) {
+                   break;
+                }
+            }
+        }
+   }
+
+   return range;
+};
+
+function setCurrentCursorPosition$(name)(chars) {
+    chars = chars + 3;
+    if (chars >= 0) {
+        var selection = window.getSelection();
+
+        range = createRange(document.getElementById("$(name)").parentNode, { count: chars });
+
+        if (range) {
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+};""")
+    push!(comp[:extras], caretpos)
+    comp[:oninput] = comp[:oninput] * ";getCaretIndex$(name)(this);"
+end
 """
 ```julia
 textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
@@ -900,6 +966,14 @@ function on(f::Function, event::String)
     cl = ClientModifier(); f(cl)
     scrpt = """addEventListener('$event', $(funccl(cl)));"""
     script("doc$event", text = scrpt)
+end
+
+function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
+    time::Integer = 1000)
+    mod = ClientModifier()
+    f(mod)
+    push!(cm.changes,
+    "new Promise(resolve => setTimeout($(funccl(mod, name)), $time));")
 end
 
 """
