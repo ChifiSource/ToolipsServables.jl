@@ -332,10 +332,11 @@ function getindex(vec::Vector{<:AbstractComponent}, name::String)::AbstractCompo
     throw(KeyError(name))
 end
 
-function delete!(name::String, v::Vector{<:AbstractComponent})::Nothing
+function delete!(vec::Vector{<:AbstractComponent}, name::String)::Nothing
     f = findfirst(c::AbstractComponent -> c.name == name, vec)
     if ~(isnothing(f))
-        deleteat!(vec, f); nothing
+        deleteat!(vec, f)
+        return(nothing)
     end
     println("component $name not in $(join([comp.name for comp in vec], "| "))")
     throw(KeyError(name))
