@@ -160,7 +160,7 @@ htmlcomponent(comp)["sample"]["text"]
 "hello"
 ```
 #### contributing guidelines
-There are several ways to contribute to the ParametricProcesses package.
+There are several ways to contribute to the `ToolipsServables` package.
 
 - submitting [issues](https://github.com/ChifiSource/ToolipsServables.jl/issues)
 - creating packages which use `ToolipsServables`
