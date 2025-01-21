@@ -968,12 +968,18 @@ function on(f::Function, event::String)
     script("doc$event", text = scrpt)
 end
 
+on(f::Function, perform_in::Integer) = begin
+    clientmod = ClientModifier()
+    f(clientmod)
+    script(text = "new Promise(resolve => setTimeout($(funccl(clientmod, gen_ref(4))), $(perform_in)));")
+end
+
 function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
     time::Integer = 1000)
-    mod = ClientModifier()
-    f(mod)
+    clientmod = ClientModifier()
+    f(clientmod)
     push!(cm.changes,
-    "new Promise(resolve => setTimeout($(funccl(mod, name)), $time));")
+    "new Promise(resolve => setTimeout($(funccl(clientmod, name)), $time));")
 end
 
 """
