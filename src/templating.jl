@@ -1085,7 +1085,6 @@ bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :down) -> ::C
 `bind` is used to bind inputs other than clicks and drags to a `Component` or `Connection`.
 This `bind!` simply generates a `Component{:script}` that will bind keyboard events.
 - See also: `ClientModifier`, `on`, `set_text!`, `set_children!`, `alert!`
-#### example
 ```example
 module MyServer
 using Toolips
@@ -1118,12 +1117,10 @@ end
 ```julia
 move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}) -> ::Nothing
 ```
----
 `move!` is a `ComponentModifier` `Function` that will move a `Component` into 
 another `Component`. The values of `p` -- as is the case in most `ComponentModifier` functions which take 
 a `Component` -- can be `Component` names or the Components themselves. The key of the `Pair` 
 will become the child of the value.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1156,11 +1153,9 @@ end
 ```julia
 remove!(cm::AbstractComponentModifier, s::Any) -> ::Nothing
 ```
----
 `remove!` is a `ComponentModifier` `Function` that will remove a `Component` 
 from the page. `s` can be either a `String`, the component's `name` or the 
 `Component` itself.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1185,9 +1180,7 @@ end
 ```julia
 set_text!(c::AbstractComponentModifier, s::Any, txt::Any) -> ::Nothing
 ```
----
 Sets the text of the `Component` (or `Component` `name`) `s`. `txt` can also be a `Component{:property}`
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1216,9 +1209,7 @@ end
 ```julia
 set_children!(cm::AbstractComponentModifier, s::Any, v::Vector{<:Servable}) -> ::Nothing
 ```
----
-`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v`.
-#### example
+`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v` in a callback.
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1243,9 +1234,7 @@ end
 ```julia
 append!(cm::AbstractComponentModifier, name::Any, child::AbstractComponent) -> ::Nothing
 ```
----
 Appends the `Component` `child` to the `Component` or `Component `name` provided in the argument `name`.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1273,10 +1262,8 @@ end
 ```julia
 insert!(cm::AbstractComponentModifier, name::String, i::Int64, child::AbstractComponent) -> ::Nothing
 ```
----
 Inserts `child` into `name` (a `Component` or its `name`) at index `i`. Note that, in true Julia fashion, 
 indexes start at 1.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1303,10 +1290,8 @@ end
 ```julia
 sleep!(cm::AbstractComponentModifier, time::Any) -> ::Nothing
 ```
----
 `sleep!` will cause a client-side timeout for `time` milliseconds. This can be used to delay 
 different actions in a callback, which might be especially useful in the `ClientModifier` context.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1334,7 +1319,6 @@ end
 ```julia
 style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
----
 Styles `name` with the stylepairs `sty` in a callback. Note that `style!` will only add to the style, 
 whereas `set_style!` may be used to change the style. `name` should be a `Component` or a `Component`'s name.
 ```example
@@ -1361,7 +1345,6 @@ end
 ```julia
 set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
----
 Sets the style of the `Component` `name` (provided as itself or its `Component.name`) to `sty` in a callback. 
 Note that this function sets style, removing all previous styles. In order to simply add to the style, or alter it, 
     use `style!(::AbstractComponentModifier, ...)`.
@@ -1549,12 +1532,7 @@ end
 ```julia
 redirect_args!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...) -> ::Nothing
 ```
----
-`redirect_args!` is used to change redirects based on arguments entirely on the client side. In most cases, we will be using `redirect!` to 
-move clients to a different page -- even with a `ClientModifier`. This provides a tool for the exception, where we want to work with `Component` 
-properties on the client side. We are able to get `Component{:property}`'s back from a `ClientModifier` by using `getindex` or `get_text`. Note that this 
-`ComponentProperty` is not a Julia-bound type, this is a representation of that property in JavaScript which is ran without Julia on the client. 
-In order to run callbacks on the server, instead just use `ToolipsSession` and provide a `Connection` to `on`. (`using ToolipsSession; ?(on)`)
+`redirect_args` is now **deprecated**, please see `redirect!` instead.
 #### example
 The following example is from the `Toolips` documentation site's searchbar. This example uses `get_text` to retrieve the text property. Note that 
 `getindex` is used for regular properties, whereas `get_text` is exclusively used for text.

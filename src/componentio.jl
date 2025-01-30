@@ -1,6 +1,6 @@
 function html_properties(s::AbstractString)
     propvec::Vector{SubString} = split(s, " ")
-    properties::Dict{Symbol, Any} = Dict{Symbol, Any}(begin
+    properties::Dict{Symbol, String} = Dict{Symbol, String}(begin
         ppair::Vector{SubString} = split(segment, "=")
         if length(ppair) < 2
             Symbol(ppair[1]) => string(ppair[1])
@@ -8,7 +8,7 @@ function html_properties(s::AbstractString)
             Symbol(ppair[1]) => replace(string(ppair[2]), "\"" => "")
         end
     end for segment in propvec)
-    properties::Dict{Symbol, Any}
+    properties::Dict{Symbol, String}
 end
 
 """
@@ -22,7 +22,6 @@ Reads components from an HTML `String`. Providing `names_only` as `false` will
 read elements without an `id` as well. Not doing so of course speeds up parsing of 
 by excluding unneeded (unnamed in this case) elements. A `Vector{String}` of names 
 may also be provided.
----
 ```example
 comp = "<div id=\\"sample\\">hello</div>"
 
@@ -71,7 +70,6 @@ function htmlcomponent(s::String, names_only::Bool = true)
             text = s[minimum(argfinish) + 1:minimum(finisher) - 2]
         end
         push!(properties, :text => text)
-        props = Dict{Symbol, Any}(Symbol(k[1]) => k[2] for k in properties)
         push!(comps, Component{Symbol(tag)}(name, tag, props))
     end
     return(comps)
@@ -145,11 +143,6 @@ The `Component{<:Any}` and key-word argument dispatch will interpolate in-line c
 as values with a `%` before them. The latter function will take a series of strings paired with functions. 
 
 The functions will be passed the `String` of a code block, the return is another `String` -- the result.
----
-```example
-
-
-```
 """
 function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...; keyargs ...)
     replace_names = vcat([comp.name for comp in components], [string(arg[1]) for arg in keyargs])
