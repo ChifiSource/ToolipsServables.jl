@@ -239,8 +239,8 @@ end
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
 
 function style!(sty::AbstractComponent, anim::AbstractAnimation)
-    iters::Number = anim.iterations
-    if iters == 0
+    iters = anim.iterations
+    if string(iters) == "0"
         iters = "infinite"
     end
     style!(sty, "animation-duration" => anim.duration, 
