@@ -168,36 +168,24 @@ using Base64
 
 """
 ```julia
-abstract type Servable
+abstract type Servable <: Any
 ```
 A `Servable` is a type intended to be written to IO that is served to a server. ToolipsServables 
-comes with two `Servable` types,
+comes with the `Component`, the `File`, `KeyFrames`, and `Style` servables.
 - All servables have a `name`.
 - All servables are dispatched to `string`.
-- `Servables` (?Servables) can be indexed using a `String` corresponding to `name`.
----
+- Vectors of Servables can be indexed by a `String`, which will index the `name`.
 - See also: `Servables`, `File`, `Component`, `templating`
 """
 abstract type Servable end
 
-sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+sampler::String = "abcdefghijklmnopqrstuvwxyz1234567890-=+`~.,[]()^%#@!*&/|"
 
-function gen_ref(n::Int64 = 16) 
+function gen_ref(n::Int64 = 8) 
     samps = (rand(1:length(sampler)) for i in 1:n)
     join(sampler[samp] for samp in samps)
 end
 
-"""
-```julia
-Servables{T} (alias for Vector{T} where {T <: Servable})
-```
-`Servables` are able to be written to `IO` or a `String` using `write!`. Indexing a 
-`Vector` of `Servables` will grab a `Servable` by `name`
-- See also: `Servable`
-##### consistencies
-- `name`**::String**
-- `string(**::Servable**)`
-"""
 const Servables{T} = Vector{T} where {T <: Servable}
 
 string(s::Servable) = s.name::String
@@ -214,7 +202,6 @@ a `<: IO` or a `String`.
 write!(io::IO, servables::Servable ...) -> ::Nothing
 write!(io::String, servables::Servable ...) -> ::String
 ```
----
 ```julia
 using ToolipsServables
 # write candidate
@@ -307,11 +294,10 @@ end
 """
 ### abstract type AbstractComponent <: Servable
 Components are html elements or CSS classes. 
-- See also: `Component`, `Servable`, `StyleComponent`, `style!`
-##### consistencies
 - `name`**::String**
 - `string`**::AbstractComponent**
 - `properties`**::Dict{Symbol, <:Any}**
+- See also: `Component`, `Servable`, `StyleComponent`, `style!`
 ```
 """
 abstract type AbstractComponent <: Servable end

@@ -968,18 +968,38 @@ function on(f::Function, event::String)
     script("doc$event", text = scrpt)
 end
 
-on(f::Function, perform_in::Integer) = begin
+on(f::Function, perform_in::Integer; recurring::Bool = false) = begin
     clientmod = ClientModifier()
     f(clientmod)
-    script(text = "new Promise(resolve => setTimeout($(funccl(clientmod, gen_ref(4))), $(perform_in)));")
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
+    script(text = "new Promise(resolve => set$type($(funccl(clientmod, gen_ref(4))), $(perform_in)));")
 end
 
-function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
-    time::Integer = 1000)
+on(f::Function, comp::AbstractComponentModifier, perform_in::Integer; recurring::Bool = false) = begin
     clientmod = ClientModifier()
     f(clientmod)
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
+    push!(comp.changes, 
+    "new Promise(resolve => set$type($(funccl(clientmod, gen_ref(4))), $(perform_in)));")
+end
+
+
+function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
+    time::Integer = 1000, recurring::Bool = false)
+    clientmod = ClientModifier()
+    f(clientmod)
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
     push!(cm.changes,
-    "new Promise(resolve => setTimeout($(funccl(clientmod, name)), $time));")
+    "new Promise(resolve => set$type($(funccl(clientmod, name)), $time));")
 end
 
 """
@@ -1293,10 +1313,10 @@ end
 
 """
 ```julia
-alert!(cm::AbstractComponentModifier, s::Striing) -> ::Nothing
+alert!(cm::AbstractComponentModifier, s::String) -> ::Nothing
 ```
----
-Alerts the client with the `String` `s` in a callback.
+Alerts the client with the `String` `s` in a callback. This will present a small 
+dialog popup on the client's system with `s` as the message.
 ```example
 module Server
 using Toolips
@@ -1319,7 +1339,6 @@ alert!(cm::AbstractComponentModifier, s::String) = push!(cm.changes, "alert('$s'
 ```julia
 focus!(cm::AbstractComponentModifier, name::String) -> ::Nothing
 ```
----
 Focuses the `Component` provided in `name` in a callback from the `Client`. `name` will be either 
 a `Component`, or the `Component`'s `name`. `focus!` will put the user's cursor/text input into the element. 
 The inverse to `focus!` is `blur!`.
@@ -1337,14 +1356,16 @@ end
 ```
 """
 function focus!(cm::AbstractComponentModifier, name::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
     push!(cm.changes, "document.getElementById('$name').focus();")
 end
 
 """
 ```julia
-blur!(cm::AbstractComponentModifier, name::String) -> ::Nothing
+blur!(cm::AbstractComponentModifier, name::Any) -> ::Nothing
 ```
----
 Un-focuses the `Component` provided in `name` in a callback from the `Client`. `name` will be either 
 a `Component`, or the `Component`'s `name`. This will unselect the currently focused element, the inverse of 
 `focus!`
@@ -1368,19 +1389,29 @@ export home, start!
 end
 ```
 """
-function blur!(cm::AbstractComponentModifier, name::String)
+function blur!(cm::AbstractComponentModifier, name::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
     push!(cm.changes, "document.getElementById('$name').blur();")
     nothing::Nothing
 end
 
 """
 ```julia
-redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0) -> ::Nothing
+redirect!(cm::AbstractComponentModifier, url::AbstractString, ...; new_tab::Bool = false) -> ::Nothing
 ```
----
 `redirect!` will cause the client to send a `GET` request to `url`. `delay` can be used to add a millisecond delay. 
 This can also be used for navigating users around your website. It might also be useful to check out `redirect_args!` 
     for redirecting a `ClientModifier` with arguments.
+```julia
+# regular redirect:
+redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; new_tab::Bool = false) -> ::Nothing
+
+# redirect a client with arguments from a `ClientModifier`.
+redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
+delay::Int64 0, new_tab::Bool = false) ->::Nothing
+```
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1389,6 +1420,28 @@ home = route("/") do c::Connection
         redirect!(cl, "https://github.com/")
     end
     write!(c, hange)
+end
+
+# redirecting with arguments (no `ToolipsSession` required!):
+function make_searchbar(text::String)
+    scontainer = div("searchcontainer")
+    style!(scontainer, "background" => "transparent", 
+    "left" => 18perc, "width" => 92perc, "z-index" => "10", "display" => "flex")
+    sbar = a("searchbar", text = "enter search ...", contenteditable = true)
+    barstyle = ("padding" => 5px, "border-radius" => 1px, "background-color" => "#0b0930", "color" => "white", 
+    "font-weight" => "bold", "font-size" => 15pt)
+    style!(sbar, "width" => 40percent, "width" => 85perc, "min-width" => 85perc, barstyle ...)
+    sbutton = button("sbutton", text = "search")
+    style!(sbutton, barstyle ...)
+    on(sbar, "click") do cl
+        set_text!(cl, sbar, "")
+    end
+    on(sbutton, "click") do cl
+        proptext = get_text(cl, "searchbar")
+        redirect_args!(cl, "/docs", :search => proptext)
+    end
+    push!(scontainer, sbar, sbutton)
+    scontainer
 end
 ```
 """
@@ -1401,6 +1454,21 @@ function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::In
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url";}, $delay);""")
 end
+
+function redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
+    delay::Int64 = 0, new_tab::Bool = false)
+    args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
+    if new_tab
+        push!(cm.changes, """setTimeout(
+        function () {window.open('$url', '_blank').focus();}, $delay);""")
+        return
+    end
+    push!(cm.changes, """setTimeout(
+    function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
+    nothing::Nothing
+end
+
+# TODO deprecate `redirect_args!`
 
 """
 ```julia
@@ -1440,6 +1508,7 @@ end
 """
 function redirect_args!(cm::AbstractClientModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
     delay::Int64 = 0)
+    @warn """redirect_args! is deprecated in favor of redirect! and will not be present in `ToolipsServables` 0.2+"""
     args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
@@ -1450,7 +1519,6 @@ end
 ```julia
 next!(f::Function, cl::AbstractComponentModifier, comp::Any) -> ::Nothing
 ```
----
 `next!` creates a sequence of events to occur after a component's transition as ended. `comp` can be 
 the component's `name` or the `Component` itself. Note that the `Component` has to be in a transition to 
 use `next!`, which means we will need to mutate its style. For simply creating a delay, there is `sleep!` -- 
@@ -1479,6 +1547,7 @@ end
 
 start!(AmericanServer)
 ```
+- See also: `transition!`, `keyframes!`, `on`, `alert!`, `set_text!`
 """
 function next!(f::Function, cl::AbstractComponentModifier, comp::Any)
     if typeof(comp) <: AbstractComponent
@@ -1505,8 +1574,8 @@ end
 ```julia
 transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...) -> ::Nothing
 ```
-Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a `Pair{String, Vector{String}}`. 
-    The keys of the pairs will be time increments, likely using `s` or `ms`, and the values will be 
+Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a list `Tuple` (provided as arguments) of
+    `Pair{String, Vector{Pair{String, String}}}`. The keys of the pairs will be time increments, likely using `s` or `ms`, and the values will be 
     the styles associated with that portion of the animation.
 ```example
 newcomp = Gattino.div("sss")
@@ -1521,7 +1590,8 @@ on(newcomp, "click") do cl::ClientModifier
         "1s" => ["background-color" => "green"]] ... )
 end
 ```
-Note that some style has to change, but it can be arbitrary.
+Note that some style has to change for a to occur, but the transition can be done on an 
+    arbitrary style or a style that does not apply to the `Component`.
 ```julia
 newcomp = Gattino.div("sss")
 style!(newcomp, "width" => 200px, "height" => 200px, "background-color" => "green")
@@ -1550,13 +1620,15 @@ end
 ```julia
 update!(cm::AbstractComponentModifier, ppane::Any, plot::Any) -> ::Nothing
 ```
----
 `update!` is used to put a Julia object into a `Component` in a callback. This `Function` will 
-use `show(io::IO, ::MIME{Symbol("text/html")}, PLOT::Any)` with your type. This being considered, ensure 
-this binding exists.
+use `show(io::IO, ::MIME{Symbol("text/html")}, T::MyType)` with your type. Ensure this binding exists, 
+or it will not work with this function.
 """
 function update!(cm::AbstractComponentModifier, ppane::Any, plot::Any)
-    io::IOBuffer = IOBuffer();
+    if typeof(comp) <: AbstractComponent
+        comp = comp.name
+    end
+    io::IOBuffer = IOBuffer()
     show(io, "text/html", plot)
     data::String = String(io.data)
     data = replace(data,
@@ -1568,11 +1640,10 @@ end
 ```julia
 update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any, filetype::String = "png") -> ::Nothing
 ```
----
 This `Function` is used to update the `Base64` of a given `base64_img` inside of a callback. `name` in this case will 
 be the `Component` or the `Component`'s `name` which should hold the image (this should be a `Component{:img}` or the name of one.)
-##### example
 ```julia
+# example; using Base64 to show `Plots` plot:
 module Example
 using Toolips
 using Toolips.Components
