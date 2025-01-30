@@ -71,6 +71,7 @@ result = write!("", post_style, fadein, mainbod)
 - `KeyFrames` <: `AbstractAnimation`
 
 ###### templating
+use `?(templating)` to learn more about HTML templating with Toolips.
   - `img`
   - `link`
   - `meta`
@@ -174,12 +175,12 @@ A `Servable` is a type intended to be written to IO that is served to a server. 
 comes with the `Component`, the `File`, `KeyFrames`, and `Style` servables.
 - All servables have a `name`.
 - All servables are dispatched to `string`.
-- Vectors of Servables can be indexed by a `String`, which will index the `name`.
+- Vectors of Servables can be indexed by a `String`, which will index the servables by `name`
 - See also: `Servables`, `File`, `Component`, `templating`
 """
 abstract type Servable end
 
-sampler::String = "abcdefghijklmnopqrstuvwxyz1234567890-=+`~.,[]()^%#@!*&/|"
+sampler::String = "abcdefghijklmnopqrstuvwxyz"
 
 function gen_ref(n::Int64 = 8) 
     samps = (rand(1:length(sampler)) for i in 1:n)
@@ -256,7 +257,6 @@ will yield the field path. Using `string` on a file will read the file as a `Str
 ```julia
 File(`dir`**::String**)
 ```
----
 ```example
 # write! candidate
 io = IOBuffer()
@@ -292,7 +292,9 @@ string(f::File{<:Any}) = begin
 end
 
 """
-### abstract type AbstractComponent <: Servable
+```julia
+abstract type AbstractComponent <: Servable
+```
 Components are html elements or CSS classes. 
 - `name`**::String**
 - `string`**::AbstractComponent**
@@ -354,7 +356,6 @@ Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T 
 Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
 Component(tag::String, name::String, props::Any ...; args ...)
 ```
----
 ```example
 using ToolipsServables
 # using Toolips.Components
@@ -446,7 +447,9 @@ function copy(c::Component{<:Any})
 end
 
 """
-### abstract type StyleComponent <: AbstractComponent
+```julia
+abstract type StyleComponent <: AbstractComponent
+```
 StyleComponents are components which can be written inside of a `Component{:style}` (CSS styles). 
 For base `ToolipsServables`, this includes the `KeyFrame` type and `Style` type. These carry 
 the same consistencies as a `Component`, but don't hold a `tag`.
@@ -473,16 +476,13 @@ to `style!` a `Component` directly, `style!` to mutate the styles of a `Style`, 
 create new styles. 
 
 - See also: `style`, `style!`, `StyleComponent`, `style_properties`, `templating`, `AbstractAnimation`
-##### constructors
 - Style(name::String; props ...)
----
 - There is a canonical method for `style` which can be used similarly to other `Component` templating methods (without key-word arguments).
 ```julia
 style(name::String, stylepairs::Pair{String, <:Any}) -> Style
 ```
 A `Style` can be written using `write!`, and converted to a `String` using the `string` 
 function.
----
 ##### example
 ```julia
 # create a style
@@ -526,9 +526,11 @@ string(comp::Style) = begin
 end
 
 """
-### abstract type AbstractAnimation <: StyleComponent
+```julia
+abstract type AbstractAnimation <: StyleComponent
 Animations are changes to the style of components that happen to the screen over time.
 Toolips provides parametric anaimations that are intended to be used through high-level methods.
+```
 ##### consistencies
 - `name`**::String**
 - `string(**::AbstractAnimation**)`
@@ -555,7 +557,6 @@ to create a looping animation.
 KeyFrames(name::String, p::Pair{String, Vector{String}} ...; iterations::Int64 = 1,
 duration::String = 1s)
 ```
----
 ```example
 a = keyframes("fadein")
 keyframes!(a, 0percent, "opacity" => 0percent)
