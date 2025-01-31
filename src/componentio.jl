@@ -1,6 +1,6 @@
 function html_properties(s::AbstractString)
     propvec::Vector{SubString} = split(s, " ")
-    properties::Dict{Symbol, String} = Dict{Symbol, String}(begin
+    properties::Dict{Symbol, Any} = Dict{Symbol, String}(begin
         ppair::Vector{SubString} = split(segment, "=")
         if length(ppair) < 2
             Symbol(ppair[1]) => string(ppair[1])
@@ -8,7 +8,7 @@ function html_properties(s::AbstractString)
             Symbol(ppair[1]) => replace(string(ppair[2]), "\"" => "")
         end
     end for segment in propvec)
-    properties::Dict{Symbol, String}
+    properties::Dict{Symbol, Any}
 end
 
 """
@@ -76,9 +76,6 @@ function htmlcomponent(s::String, names_only::Bool = true)
 end
 
 function htmlcomponent(s::String, readonly::Vector{String})
-    if readonly[1] == "none"
-        return Vector{Servable}()
-    end
     Vector{AbstractComponent}(filter!(x -> ~(isnothing(x)), [begin
         element_sect = findfirst(" id=\"$compname\"", s)
         if ~(isnothing(element_sect))
@@ -100,10 +97,21 @@ function htmlcomponent(s::String, readonly::Vector{String})
             push!(properties, :text => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
             "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
             "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?"))
-            Component{Symbol(tg)}(compname, tg, properties)
+            comp = Component{Symbol(tg)}(compname, tg)
+            comp.properties = properties
+            comp::Component
         else
         end
     end for compname in readonly]))::Vector{AbstractComponent}
+end
+
+function htmlcomponent(raw::String, component_name::String)
+    found_position = findfirst("id=\"$component_name\"", raw)
+    if isnothing(found_position)
+        throw("could not find component $component_name in page.")
+        @info "raw HTML dump (does not contain $component_name): $raw"
+    end
+    tag_begin = findlast("<", minimum(found_position) - 1)
 end
 
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])

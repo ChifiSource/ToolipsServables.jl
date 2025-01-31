@@ -210,10 +210,16 @@ using CSS pairs, or in the case of components using a `Style` or `Animation`.
 This can be an infinite list of properties and values, the keys must be strings, 
 (`?style_properties`) or a `Style`/`Animation`.
 ```julia
+# response-side style!
+# style a `Component` directly:
 style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+# style a Component's child:
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...)
+# set a `Component`'s class to a style's name.
 style!(comp::Component{<:Any}, sty::Style)
+# styles a style with the animation `anim`(be sure to write `anim`):
 style!(sty::Style, anim::AbstractAnimation)
+# styles a component with the animation `anim` (be sure to write `anim`):
 style!(comp::Component{<:Any}, anim::AbstractAnimation)
 ```
 - See also: `keyframes`, `set_children!`, `style!`, `templating`, `measures`
@@ -301,8 +307,8 @@ mysel = select("mainselect", myopts, value = "henry")
 ```
 """
 function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component{:select}(name, p ..., args ...)
-    thedrop["oninput"]::String = "this.setAttribute('value',this.value);"
+    thedrop::Component{:select} = Component{:select}(name, p ..., args ...)
+    thedrop["oninput"] = "this.setAttribute('value',this.value);"
     thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
 end
@@ -396,8 +402,7 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     args ...)
     raw = element("raw$name")
     style!(raw, "display" => "none")
-    box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`",
-    caret = "0",
+    box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`", caret = "0",
     oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;", args ...)
     push!(box[:extras], raw)
     return(box)::Component{:div}
@@ -468,22 +473,25 @@ function createRange(node, chars, range) {
    return range;
 };
 
-function setCurrentCursorPosition$(name)(chars) {
-    chars = chars + 3;
-    if (chars >= 0) {
-        var selection = window.getSelection();
+function setCaretPosition$name(pos) {
+  // Create a range object
+  let el = document.getElementById('$name')
+  let range = document.createRange();
 
-        range = createRange(document.getElementById("$(name)").parentNode, { count: chars });
+  // Get the text node within the element
+  let node = el.firstChild; 
 
-        if (range) {
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    }
-};""")
+  // Set the range to the specified position
+  range.setStart(node, pos);
+  range.collapse(true);
+
+  // Get the selection object and add the range
+  let selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+}""")
     push!(comp[:extras], caretpos)
-    comp[:oninput] = comp[:oninput] * ";getCaretIndex$(name)(this);"
+    comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
     comp::Component{:div}
 end
 
@@ -554,7 +562,7 @@ function rangeslider(name::String, range::UnitRange = 1:100,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)
+            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -1149,6 +1157,13 @@ function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
   nothing::Nothing
 end
 
+function set_textdiv_cursor!(cm::AbstractComponentModifier, name::Any, pos::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
+    push!(cm.changes, "setCaretPosition$(name)($pos);")
+end
+
 """
 ```julia
 remove!(cm::AbstractComponentModifier, s::Any) -> ::Nothing
@@ -1724,4 +1739,5 @@ function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
     close(b64)
     mysrc::String = String(io.data)
     cm[name] = "src" => "data:image/$filetype;base64," * mysrc
+    nothing::Nothing
 end
