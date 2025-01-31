@@ -474,21 +474,41 @@ function createRange(node, chars, range) {
 };
 
 function setCaretPosition$name(pos) {
-  // Create a range object
-  let el = document.getElementById('$name')
-  let range = document.createRange();
+	// Get the editable div
+	let el = document.getElementById('$name');
+	let range = document.createRange();
+	let selection = window.getSelection();
 
-  // Get the text node within the element
-  let node = el.firstChild; 
+	// Helper function to find the correct text node and offset
+	function getTextNodeAtPosition(root, index) {
+		let nodeStack = [root], node, foundNode = null;
+		while (nodeStack.length > 0) {
+			node = nodeStack.pop();
+			if (node.nodeType === Node.TEXT_NODE) {
+				if (index <= node.length) {
+					foundNode = node;
+					break;
+				}
+				index -= node.length;
+			} else {
+				for (let i = node.childNodes.length - 1; i >= 0; i--) {
+					nodeStack.push(node.childNodes[i]);
+				}
+			}
+		}
+		return { node: foundNode, offset: index };
+	}
 
-  // Set the range to the specified position
-  range.setStart(node, pos);
-  range.collapse(true);
+	// Find the correct text node and offset
+	let { node, offset } = getTextNodeAtPosition(el, pos);
 
-  // Get the selection object and add the range
-  let selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
+	// If we found a valid node, set the caret position
+	if (node) {
+		range.setStart(node, offset);
+		range.collapse(true);
+		selection.removeAllRanges();
+		selection.addRange(range);
+	}
 }""")
     push!(comp[:extras], caretpos)
     comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
