@@ -97,7 +97,7 @@ function htmlcomponent(s::String, readonly::Vector{String})
             push!(properties, :text => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
             "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
             "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?"))
-            comp = Component{Symbol(tg)}(compname, tg)
+            comp = Component{Symbol(tg)}(compname)
             comp.properties = properties
             comp::Component
         else

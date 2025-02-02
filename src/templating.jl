@@ -1235,7 +1235,7 @@ function set_text!(c::AbstractComponentModifier, s::Any, txt::Any)
     if typeof(txt) <: AbstractComponent
         txt = string(s)
     end
-    txt = replace(txt, "`" => "\\`", "\"" => "\\\"", "''" => "\\'")
+    txt = replace(txt, "`" => "\\`", "\"" => "\\\"", "''" => "\\'", "\n" => "<br>")
     push!(c.changes, "document.getElementById('$s').innerHTML = `$txt`;")
     nothing::Nothing
 end

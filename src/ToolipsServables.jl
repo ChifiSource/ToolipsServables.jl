@@ -397,7 +397,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
         end
         new{T}(name, properties, tag)
     end
-    function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
+    function Component{T}(name::String = "-", properties::Pair{<:Any, <:Any} ...; tag::String = string(T), args ...) where {T <: Any}
         properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
         [push!(properties, Symbol(prop[1]) => prop[2]) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
@@ -419,6 +419,15 @@ setindex!(s::AbstractComponent, a::Any, symb::String) = begin
         return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, Symbol(symb) => a)
+end
+
+getindex(s::AbstractComponent, symb::Symbol, names::String ...) = begin
+    current_comp::AbstractComponent = s
+    for name in names
+        current_comp = current_comp[:children][name]
+    end
+    current_comp::AbstractComponent
+
 end
 
 function propstring(properties::Dict{Symbol, Any})::String
