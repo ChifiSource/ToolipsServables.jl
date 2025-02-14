@@ -71,6 +71,7 @@ result = write!("", post_style, fadein, mainbod)
 - `KeyFrames` <: `AbstractAnimation`
 
 ###### templating
+use `?(templating)` to learn more about HTML templating with Toolips.
   - `img`
   - `link`
   - `meta`
@@ -110,6 +111,8 @@ result = write!("", post_style, fadein, mainbod)
   - `tr`
   - `th`
   - `td`
+  - `tmd`
+  - `base64img`
 - `keyframes`
 - `style!`
 - `push!`
@@ -119,6 +122,7 @@ result = write!("", post_style, fadein, mainbod)
 - `numberinput`
 - `rangeslider`
 - `option`
+- `options`
 - `select`
 - `checkbox`
 - `colorinput`
@@ -126,6 +130,7 @@ result = write!("", post_style, fadein, mainbod)
 - `cursor`
 - `context_menu!`
 - `keyinput`
+- `textdiv_caret_tracker!`
 - `WebMeasure{format <: Any}`
 - `measures` (`?measures`)
   - `px`
@@ -168,36 +173,24 @@ using Base64
 
 """
 ```julia
-abstract type Servable
+abstract type Servable <: Any
 ```
 A `Servable` is a type intended to be written to IO that is served to a server. ToolipsServables 
-comes with two `Servable` types,
+comes with the `Component`, the `File`, `KeyFrames`, and `Style` servables.
 - All servables have a `name`.
 - All servables are dispatched to `string`.
-- `Servables` (?Servables) can be indexed using a `String` corresponding to `name`.
----
+- Vectors of Servables can be indexed by a `String`, which will index the servables by `name`
 - See also: `Servables`, `File`, `Component`, `templating`
 """
 abstract type Servable end
 
-sampler::String = "iokrtshgjiosjbisjgiretwshgjbrthrthjtyjtykjkbnvjasdpxijvjr"
+sampler::String = "abcdefghijklmnopqrstuvwxyz"
 
-function gen_ref(n::Int64 = 16) 
+function gen_ref(n::Int64 = 8) 
     samps = (rand(1:length(sampler)) for i in 1:n)
     join(sampler[samp] for samp in samps)
 end
 
-"""
-```julia
-Servables{T} (alias for Vector{T} where {T <: Servable})
-```
-`Servables` are able to be written to `IO` or a `String` using `write!`. Indexing a 
-`Vector` of `Servables` will grab a `Servable` by `name`
-- See also: `Servable`
-##### consistencies
-- `name`**::String**
-- `string(**::Servable**)`
-"""
 const Servables{T} = Vector{T} where {T <: Servable}
 
 string(s::Servable) = s.name::String
@@ -214,7 +207,6 @@ a `<: IO` or a `String`.
 write!(io::IO, servables::Servable ...) -> ::Nothing
 write!(io::String, servables::Servable ...) -> ::String
 ```
----
 ```julia
 using ToolipsServables
 # write candidate
@@ -269,7 +261,6 @@ will yield the field path. Using `string` on a file will read the file as a `Str
 ```julia
 File(`dir`**::String**)
 ```
----
 ```example
 # write! candidate
 io = IOBuffer()
@@ -305,13 +296,14 @@ string(f::File{<:Any}) = begin
 end
 
 """
-### abstract type AbstractComponent <: Servable
+```julia
+abstract type AbstractComponent <: Servable
+```
 Components are html elements or CSS classes. 
-- See also: `Component`, `Servable`, `StyleComponent`, `style!`
-##### consistencies
 - `name`**::String**
 - `string`**::AbstractComponent**
 - `properties`**::Dict{Symbol, <:Any}**
+- See also: `Component`, `Servable`, `StyleComponent`, `style!`
 ```
 """
 abstract type AbstractComponent <: Servable end
@@ -368,7 +360,6 @@ Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T 
 Component{T}(name::String = "-", properties ...; args ...) where {T <: Any}
 Component(tag::String, name::String, props::Any ...; args ...)
 ```
----
 ```example
 using ToolipsServables
 # using Toolips.Components
@@ -410,7 +401,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
         end
         new{T}(name, properties, tag)
     end
-    function Component{T}(name::String = "-", properties ...; tag::String = string(T), args ...) where {T <: Any}
+    function Component{T}(name::String = "-", properties::Pair{<:Any, <:Any} ...; tag::String = string(T), args ...) where {T <: Any}
         properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
         [push!(properties, Symbol(prop[1]) => prop[2]) for prop in args]
         Component{T}(name,  tag, properties)::Component{T}
@@ -432,6 +423,15 @@ setindex!(s::AbstractComponent, a::Any, symb::String) = begin
         return(s.properties[Symbol(symb)] = a)
     end
     push!(s.properties, Symbol(symb) => a)
+end
+
+getindex(s::AbstractComponent, symb::Symbol, names::String ...) = begin
+    current_comp::AbstractComponent = s
+    for name in names
+        current_comp = current_comp[:children][name]
+    end
+    current_comp::AbstractComponent
+
 end
 
 function propstring(properties::Dict{Symbol, Any})::String
@@ -460,7 +460,9 @@ function copy(c::Component{<:Any})
 end
 
 """
-### abstract type StyleComponent <: AbstractComponent
+```julia
+abstract type StyleComponent <: AbstractComponent
+```
 StyleComponents are components which can be written inside of a `Component{:style}` (CSS styles). 
 For base `ToolipsServables`, this includes the `KeyFrame` type and `Style` type. These carry 
 the same consistencies as a `Component`, but don't hold a `tag`.
@@ -487,16 +489,13 @@ to `style!` a `Component` directly, `style!` to mutate the styles of a `Style`, 
 create new styles. 
 
 - See also: `style`, `style!`, `StyleComponent`, `style_properties`, `templating`, `AbstractAnimation`
-##### constructors
 - Style(name::String; props ...)
----
 - There is a canonical method for `style` which can be used similarly to other `Component` templating methods (without key-word arguments).
 ```julia
 style(name::String, stylepairs::Pair{String, <:Any}) -> Style
 ```
 A `Style` can be written using `write!`, and converted to a `String` using the `string` 
 function.
----
 ##### example
 ```julia
 # create a style
@@ -540,9 +539,11 @@ string(comp::Style) = begin
 end
 
 """
-### abstract type AbstractAnimation <: StyleComponent
+```julia
+abstract type AbstractAnimation <: StyleComponent
 Animations are changes to the style of components that happen to the screen over time.
 Toolips provides parametric anaimations that are intended to be used through high-level methods.
+```
 ##### consistencies
 - `name`**::String**
 - `string(**::AbstractAnimation**)`
@@ -569,7 +570,6 @@ to create a looping animation.
 KeyFrames(name::String, p::Pair{String, Vector{String}} ...; iterations::Int64 = 1,
 duration::String = 1s)
 ```
----
 ```example
 a = keyframes("fadein")
 keyframes!(a, 0percent, "opacity" => 0percent)

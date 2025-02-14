@@ -7,8 +7,33 @@ key-word arguments.
 ```example
 dv = div("name", align = "center", text = "hello!")
 ```
-- See also: `templating`, `Component`, `arguments`, `div`, `body`, `a`, `measures`, `DOCTYPE`
+A Component is *primarily* mutated with `style!`, `setindex!`, `push!`, and `set_children!`. After mutating, 
+a `Component` can be turned directly into HTML by calling `string` on the `Component`.
 ```julia
+my_example = div("sample")
+# styling:
+style!(my_example, "background-color" => "red")
+buttons = [button("b\$e", text = "this is button \$e") for e in 1:5]
+
+# setting children:
+set_children!(my_example, buttons)
+
+# editing arguments:
+my_example["contenteditable"] = true
+my_example[:contenteditable] = true
+
+# :children, :extras, and :text are special keys.
+# the extras are written before, and the text and children are written within the element.
+```
+There is also templating for CSS classes and keyframes, see `style` and `keyframes` for more information on those. 
+    For scripting, `ToolipsServables` includes a JavaScript scripting interface in the `ClientModifier`. For more 
+    information, see `ClientModifier` and `on`.
+- See also: `templating`, `Component`, `arguments`, `div`, `body`, `a`, `measures`, `DOCTYPE`, `on`
+
+Here is a comprehensive list of provided `Component` constants (and some `Method` bindings) for 
+templating convenience. Note that some of these options do extra things or have extra dispatches -- 
+for example, `select` and `options` both have alternate methods that make them far easier to work with.
+
 - `img`
 - `link`
 - `meta`
@@ -64,9 +89,14 @@ dv = div("name", align = "center", text = "hello!")
 - `cursor`
 - `context_menu!(menu::Component{<:Any})`
 - `keyinput`
+
+To make a `Component` that isn't on this list, simply provide `Component{:tag}` in place of the constant names:
+```julia
+# we want a <circle> element:
+new_circ = Component{:circle}()
 ```
 """
-const elements = Component{:elements}
+function templating end
 
 """
 ```julia
@@ -74,7 +104,6 @@ DOCTYPE() -> ::String
 ```
 In cases which utilize minimal HTML, it might be necessary to write the document 
 type to the page. In this case, simply write the return of this `Function` to your `IO`.
----
 ```example
 io = IOBuffer()
 
@@ -137,7 +166,6 @@ compress!(comp::AbstractComponent) -> ::Nothing
 `compress!` will turn the `:children` of a given `Component` into its `:text`, 
 resulting in the same `Component` with less memory usage. The trade-off to this is 
 that we can no longer pull elements from the children.
----
 ```example
 comp = body("example-body")
 push!(comp, [div("sample", text = "hello", align = "center") for x in 1:1000])
@@ -158,7 +186,6 @@ set_children!(comp::Component{<:Any}, children::Vector{<:Servable}) -> ::Nothing
 ```
 `set_children!` sets the children of `comp` to `children`. Children can be accessed 
 by indexing `:children` on a `Component`.
----
 ```example
 comp = body("example-body")
 mainheader = div("mainheader")
@@ -183,14 +210,19 @@ using CSS pairs, or in the case of components using a `Style` or `Animation`.
 This can be an infinite list of properties and values, the keys must be strings, 
 (`?style_properties`) or a `Style`/`Animation`.
 ```julia
+# response-side style!
+# style a `Component` directly:
 style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
+# style a Component's child:
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...)
+# set a `Component`'s class to a style's name.
 style!(comp::Component{<:Any}, sty::Style)
+# styles a style with the animation `anim`(be sure to write `anim`):
 style!(sty::Style, anim::AbstractAnimation)
+# styles a component with the animation `anim` (be sure to write `anim`):
 style!(comp::Component{<:Any}, anim::AbstractAnimation)
 ```
 - See also: `keyframes`, `set_children!`, `style!`, `templating`, `measures`
----
 ```example
 mycomp = div("mysample", text = "hello world!")
 style!(mycomp, "display" => "inline-block", "background-color" => "black")
@@ -214,7 +246,7 @@ style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!
 
 function style!(sty::AbstractComponent, anim::AbstractAnimation)
     iters = anim.iterations
-    if iters == 0
+    if string(iters) == "0"
         iters = "infinite"
     end
     style!(sty, "animation-duration" => anim.duration, 
@@ -242,7 +274,6 @@ keyframes(name::String) -> ::KeyFrames
 ```
 Constructs a `:keyframes` `Animation`, which can have frames added with `keyframes!`. To `keyframes!` we provide, 
 `to`, `from`, or a percentage with style pairs to create an animation.
----
 ```example
 frames = keyframes("fadein")
 
@@ -269,7 +300,6 @@ a quick way to make a selection combobox using the
 `options(names::String ...)` Method and providing the return as the second 
 positional argument to this `select` method. Both of these Components may also 
 be constructed normally.
----
 ```example
 myopts = options("emmy", "henry", "jessica")
 
@@ -277,9 +307,9 @@ mysel = select("mainselect", myopts, value = "henry")
 ```
 """
 function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component{:select}(name, p ..., args ...)
+    thedrop::Component{:select} = Component{:select}(name, p ..., args ...)
     thedrop["oninput"] = "this.setAttribute('value',this.value);"
-    thedrop[:children] = options
+    thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
 end
 
@@ -288,7 +318,6 @@ end
 options(options::String ...s) -> ::Vector{AbstractComponent}
 ```
 Provide `options` to a `select` to make a dropbox very quickly.
----
 ```example
 myopts = options("emmy", "henry", "jessica")
 
@@ -309,7 +338,6 @@ tmd(name::String, md::String = "", args::Pair{String, <:Any} ...; args ...) -> :
 ```
 Creates a `Component` directly from a raw markdown String. The `Component's` children will be 
 the markdown provided rendered to HTML.
----
 ```example
 mymd = "# hello\\n **this** is markdown"
 
@@ -333,7 +361,6 @@ encoded version of the type `raw`. The `filetype` here is the `MIME`
 that is to be encoded into `Base64`. `raw` can be any type binded to 
 `show` with this MIME -- a `Plot` from Plots.jl, or an `Image` from `Images`,
 for example.
----
 ```example
 using Plots
 using ToolipsServables
@@ -375,13 +402,28 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
     args ...)
     raw = element("raw$name")
     style!(raw, "display" => "none")
-    box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`",
-    caret = "0",
+    box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`", caret = "0",
     oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;", args ...)
     push!(box[:extras], raw)
     return(box)::Component{:div}
 end
 
+"""
+```julia
+textdiv_caret_tracker!(comp::Component{:div}) -> 
+```
+Adds a caret tracking script to a `Component{:div}`, likely a `textdiv` given we are trying to track 
+the text cursor. This function will add a new attribute, `caret`, to a `textdiv` alongside a script 
+that tracks the updates its position. This way, we can access the `caret` through a `ComponentModifier`.
+```example
+mytdiv = textdiv("example", text = "sample")
+text_div_caret_tracker!(mytdiv)
+
+bind(mytdiv, "Enter") do cl::ClientModifier
+    alert!(cl, cl["example", "caret"])
+end
+```
+"""
 function textdiv_caret_tracker!(comp::Component{:div})
     name = comp.name
     caretpos = script("caretposition", text = """
@@ -431,23 +473,48 @@ function createRange(node, chars, range) {
    return range;
 };
 
-function setCurrentCursorPosition$(name)(chars) {
-    chars = chars + 3;
-    if (chars >= 0) {
-        var selection = window.getSelection();
+function setCaretPosition$name(pos) {
+	// Get the editable div
+	let el = document.getElementById('$name');
+	let range = document.createRange();
+	let selection = window.getSelection();
 
-        range = createRange(document.getElementById("$(name)").parentNode, { count: chars });
+	// Helper function to find the correct text node and offset
+	function getTextNodeAtPosition(root, index) {
+		let nodeStack = [root], node, foundNode = null;
+		while (nodeStack.length > 0) {
+			node = nodeStack.pop();
+			if (node.nodeType === Node.TEXT_NODE) {
+				if (index <= node.length) {
+					foundNode = node;
+					break;
+				}
+				index -= node.length;
+			} else {
+				for (let i = node.childNodes.length - 1; i >= 0; i--) {
+					nodeStack.push(node.childNodes[i]);
+				}
+			}
+		}
+		return { node: foundNode, offset: index };
+	}
 
-        if (range) {
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    }
-};""")
+	// Find the correct text node and offset
+	let { node, offset } = getTextNodeAtPosition(el, pos);
+
+	// If we found a valid node, set the caret position
+	if (node) {
+		range.setStart(node, offset);
+		range.collapse(true);
+		selection.removeAllRanges();
+		selection.addRange(range);
+	}
+}""")
     push!(comp[:extras], caretpos)
-    comp[:oninput] = comp[:oninput] * ";getCaretIndex$(name)(this);"
+    comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
+    comp::Component{:div}
 end
+
 """
 ```julia
 textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
@@ -455,7 +522,6 @@ size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `text` -- using this `Function` will 
 automatically set the `value` of the `textbox` for a `ComponentModifier`.
----
 ```example
 mybox = textbox("sample", 1:10)
 ```
@@ -473,7 +539,6 @@ size::Integer = 10, value::Integer = range[1], keyargs ...) -> ::Component{:inpu
 ```
 Creates an `input` `Component` of type `password` -- using this `Function` will 
 automatically set the `value` of the `password` box for a `ComponentModifier`.
----
 ```example
 mybox = textbox("sample", 1:10)
 ```
@@ -491,7 +556,6 @@ size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates a number input component (`Component{:input}`). `value` will be set for 
 a `ComponentModifier`, the default value will be the first step in `range`.
----
 ```example
 num_inp = numberinput("sample", range = 30:40, value = 35)
 ```
@@ -508,8 +572,7 @@ end
 rangeslider(name::String, range::UnitRange{Int64} = 1:100, args::Pair{String, <:Any} ...;
 value::Integer = 50, step::Integer = 5) -> `Component{:input}`
 ```
-Creates a `Component{:input}` of type "range". 
----
+Creates a `Component{:input}` of type "range".
 ```example
 slider = rangeslider("sample", 1:500, value = 1, step = 50)
 ```
@@ -519,9 +582,19 @@ function rangeslider(name::String, range::UnitRange = 1:100,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)
+            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)::Component{:input}
 end
 
+"""
+```julia
+checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
+    args ...) -> ::Component{:input}
+```
+Creates a `Component{:input}` of type `checkbox`. Will update `value` as it is checked.
+```example
+box = checkbox("example", value = true)
+```
+"""
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
     args ...)
     ch = input(name, p  ..., type = "checkbox", value = value,
@@ -532,6 +605,16 @@ function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
     ch::Component{:input}
 end
 
+"""
+```julia
+colorinput(name::String, p::Pair{String, <:Any} ...;
+    value::String = "#ffffff", args ...) -> ::Component{:input}
+```
+Creates a `Component{:input}` of type `checkbox`. Will update `value` as it is checked.
+```example
+colorbox = colorinput("mycolors", value = "#ddd3de")
+```
+"""
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
     input(name, type = "color", oninput = "this.setAttribute('value',this.value);", 
@@ -545,7 +628,6 @@ cursor(name::String, args ...; args ...) -> ::Component{:script}
 Creates a `cursor` `Component` (a `Component{:cursor}`). This is a special `Component` which 
 tracks the `x` and `y` position of the cursor in its properties (`:x` and `:y` respectively.) 
 Ideally, this is for use with a `ComponentModifier` from `ToolipsSession`.
----
 ```example
 using Toolips
 using Toolips.Components
@@ -583,7 +665,6 @@ context_menu!(menu::Component{<:Any}) -> ::Component{:script}
 Makes your `Component` a context menu -- a menu that appears when the page is right-clicked.
 Note that this creates the same context menu across the page. If we wanted to right click individual items, 
 we might instead `append!` something using a `ComponentModifier`. 
----
 ```example
 comp = div("popup", text = "i pop up when you right click")
 style!(comp, "background-color" => "dark-red", "color" => "white")
@@ -608,10 +689,26 @@ const scope = document.querySelector("body");
     menu::Component{<:Any}
 end
 
-function keyinput(name::String, p::Pair{String, <:Any} ...; text = "w", args ...)
+"""
+```julia
+keyinput(name::String, p::Pair{String, <:Any} ...; text = "W", args ...) -> ::Component{:keyinput}
+```
+Creates a customized `Component` that is clicked to register the next key-press. This is useful for binding 
+controls, for example. The `value` of the `keyinput` will become the key that is pressed. Note that 
+you cannot bind the `keypress` or `click` events of this `Component`, as these are used to create the 
+component's functionality. Ideally, this `Component` is used alongside a submit button.
+```example
+comp = div("popup", text = "i pop up when you right click")
+style!(comp, "background-color" => "dark-red", "color" => "white")
+context_menu!(comp)
+
+write!("", comp)
+```
+"""
+function keyinput(name::String, p::Pair{String, <:Any} ...; text = "W", args ...)
     Component{:keyinput}(name, p ..., text = text, tag = "button",
     onkeypress = "this.innerHTML=event.key;this.setAttribute('value',event.key);",
-    onclick = "this.focus();", value = "W",  args ...)
+    onclick = "this.focus();", value = text,  args ...)
 end
 
 function (:)(s::Style, name::String, ps::Vector{Pair{String, String}})
@@ -704,7 +801,7 @@ const ms = WebMeasure{:ms}()
 const deg = WebMeasure{:deg}()
 const turn = WebMeasure{:turn}()
 # colors and transforms
-function rgba(r::Number, g::Number, b::Number, a::Number = 1.0)
+function rgba(r::Any, g::Any, b::Any, a::Any = 1.0)
     "rgb($r,$g,$b,$a)"::String
 end
 
@@ -722,7 +819,6 @@ abstract type Modifier <: Servable
 ```
 A `Modifier` is a type used to create handler callbacks for front-end development. 
 These are typically passed as an argument to a function to make some type of changes.
----
 - See also: `AbstractComponentModifier`, `ClientModifier`, `Component`, `on`, `bind`
 """
 abstract type Modifier <: Servable end
@@ -747,7 +843,6 @@ route("/") do c::Connection
 end
 ```
 For server-side responses, add `ToolipsSession` and use the `ComponentModifier`.
----
 - See also: `ClientModifier`, `Modifier`, Component`, `on`, `bind`
 """
 abstract type AbstractComponentModifier <: Modifier end
@@ -765,6 +860,15 @@ setindex!(cm::AbstractComponentModifier, p::Pair, s::Any) = begin
     "document.getElementById('$s').setAttribute('$key','$val');")
 end
 
+"""
+```julia
+abstract type AbstractClientModifier <: AbstractComponentModifier 
+```
+A `ClientModifier` is a type of `Modifier` that runs exclusively on the client, rather than ever 
+making a call back to Julia. This is useful to save some performance in certain contexts, simplify certain calls, 
+or add interactivity without `Session` or outside of the server context.
+- See also: `AbstractComponentModifier`, `ClientModifier`, `Component`, `on`, `bind`
+"""
 abstract type AbstractClientModifier <: AbstractComponentModifier end
 
 """
@@ -785,7 +889,6 @@ We cannot retrieve data from or use julia for this response. All of the code ser
 ```julia
 ClientModifier(name::String = gen_ref())
 ```
----
 An `AbstractComponentModifier` will typically be used with `on`. For a client-side `on` 
 event, simply call `on` on a `Component` with the event selected:
 ```example
@@ -852,7 +955,7 @@ get_text(cl::AbstractClientModifier, name::String) -> ::Component{:property}
 ```
 `get_text` is used to retrieve the text of a `Component` in a `ClientModifier`. 
 The `Component{:property}` can then be used with `setindex!`.
-#### example
+
 The following example is the function that makes the searchbar for the 
     `Toolips` app. This simple searchbar uses `get_text` and `redirect_args!` to 
     redirect the client with new `GET` arguments. This is a simple way to create a 
@@ -898,9 +1001,7 @@ string(cl::AbstractComponentModifier) = join(cm.changes)
 ```julia
 funccl(cm::ClientModifier, name::String = cm.name) -> ::String
 ```
----
 Converts a `ClientModifier` to a JavaScript `Function`.
-#### example
 ```example
 module MyServer
 using Toolips
@@ -924,7 +1025,6 @@ end
 ```julia
 on(f::Function, ...) -> ::Nothing/::Component{:script}
 ```
----
 `on` is used to register events to components or directly to pages using 
 Javascript's EventListeners. `on` will generally be passed a `Component` and 
 an event.
@@ -932,8 +1032,12 @@ an event.
 on(f::Function, component::Component{<:Any}, event::String) -> ::Nothing
 on(f::Function, event::String) -> ::Component{:script}
 ```
-- See also: `ClientModifier`, `move!`, `remove!`, `append!`, `set_children!`
-#### example
+```julia
+# call in a certain amount of time, rather than on an event.
+on(f::Function, comp::AbstractComponentModifier, perform_in::Integer; recurring::Bool = false)
+on(f::Function, perform_in::Integer; recurring::Bool = false)
+```
+- See also: `ClientModifier`, `move!`, `remove!`, `append!`, `set_children!`, `bind`, `ToolipsServables`
 ```example
 module MyServer
 using Toolips
@@ -968,23 +1072,47 @@ function on(f::Function, event::String)
     script("doc$event", text = scrpt)
 end
 
+on(f::Function, perform_in::Integer; recurring::Bool = false) = begin
+    clientmod = ClientModifier()
+    f(clientmod)
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
+    script(text = "new Promise(resolve => set$type($(funccl(clientmod, gen_ref(4))), $(perform_in)));")
+end
+
+on(f::Function, comp::AbstractComponentModifier, perform_in::Integer; recurring::Bool = false) = begin
+    clientmod = ClientModifier()
+    f(clientmod)
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
+    push!(comp.changes, 
+    "set$type($(funccl(clientmod, gen_ref(4))), $(perform_in));")
+end
+
+
 function on(f::Function, cm::AbstractComponentModifier, name::String = gen_ref(3);
-    time::Integer = 1000)
-    mod = ClientModifier()
-    f(mod)
+    time::Integer = 1000, recurring::Bool = false)
+    clientmod = ClientModifier()
+    f(clientmod)
+    type::String = "Timeout"
+    if recurring
+        type = "Interval"
+    end
     push!(cm.changes,
-    "new Promise(resolve => setTimeout($(funccl(mod, name)), $time));")
+    "new Promise(resolve => set$type($(funccl(clientmod, name)), $time));")
 end
 
 """
 ```julia
 bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :down) -> ::Component{:script}
 ```
----
 `bind` is used to bind inputs other than clicks and drags to a `Component` or `Connection`.
 This `bind!` simply generates a `Component{:script}` that will bind keyboard events.
 - See also: `ClientModifier`, `on`, `set_text!`, `set_children!`, `alert!`
-#### example
 ```example
 module MyServer
 using Toolips
@@ -1017,12 +1145,10 @@ end
 ```julia
 move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}) -> ::Nothing
 ```
----
 `move!` is a `ComponentModifier` `Function` that will move a `Component` into 
 another `Component`. The values of `p` -- as is the case in most `ComponentModifier` functions which take 
 a `Component` -- can be `Component` names or the Components themselves. The key of the `Pair` 
 will become the child of the value.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1051,15 +1177,20 @@ function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
   nothing::Nothing
 end
 
+function set_textdiv_cursor!(cm::AbstractComponentModifier, name::Any, pos::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
+    push!(cm.changes, "setCaretPosition$(name)($pos);")
+end
+
 """
 ```julia
 remove!(cm::AbstractComponentModifier, s::Any) -> ::Nothing
 ```
----
 `remove!` is a `ComponentModifier` `Function` that will remove a `Component` 
 from the page. `s` can be either a `String`, the component's `name` or the 
 `Component` itself.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1084,9 +1215,7 @@ end
 ```julia
 set_text!(c::AbstractComponentModifier, s::Any, txt::Any) -> ::Nothing
 ```
----
 Sets the text of the `Component` (or `Component` `name`) `s`. `txt` can also be a `Component{:property}`
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1106,7 +1235,7 @@ function set_text!(c::AbstractComponentModifier, s::Any, txt::Any)
     if typeof(txt) <: AbstractComponent
         txt = string(s)
     end
-    txt = replace(txt, "`" => "\\`", "\"" => "\\\"", "''" => "\\'")
+    txt = replace(txt, "`" => "\\`", "\"" => "\\\"", "''" => "\\'", "\n" => "<br>")
     push!(c.changes, "document.getElementById('$s').innerHTML = `$txt`;")
     nothing::Nothing
 end
@@ -1115,9 +1244,7 @@ end
 ```julia
 set_children!(cm::AbstractComponentModifier, s::Any, v::Vector{<:Servable}) -> ::Nothing
 ```
----
-`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v`.
-#### example
+`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v` in a callback.
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1142,9 +1269,7 @@ end
 ```julia
 append!(cm::AbstractComponentModifier, name::Any, child::AbstractComponent) -> ::Nothing
 ```
----
 Appends the `Component` `child` to the `Component` or `Component `name` provided in the argument `name`.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1172,10 +1297,8 @@ end
 ```julia
 insert!(cm::AbstractComponentModifier, name::String, i::Int64, child::AbstractComponent) -> ::Nothing
 ```
----
 Inserts `child` into `name` (a `Component` or its `name`) at index `i`. Note that, in true Julia fashion, 
 indexes start at 1.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1202,10 +1325,8 @@ end
 ```julia
 sleep!(cm::AbstractComponentModifier, time::Any) -> ::Nothing
 ```
----
 `sleep!` will cause a client-side timeout for `time` milliseconds. This can be used to delay 
 different actions in a callback, which might be especially useful in the `ClientModifier` context.
-#### example
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1233,7 +1354,6 @@ end
 ```julia
 style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
----
 Styles `name` with the stylepairs `sty` in a callback. Note that `style!` will only add to the style, 
 whereas `set_style!` may be used to change the style. `name` should be a `Component` or a `Component`'s name.
 ```example
@@ -1260,7 +1380,6 @@ end
 ```julia
 set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
----
 Sets the style of the `Component` `name` (provided as itself or its `Component.name`) to `sty` in a callback. 
 Note that this function sets style, removing all previous styles. In order to simply add to the style, or alter it, 
     use `style!(::AbstractComponentModifier, ...)`.
@@ -1287,10 +1406,10 @@ end
 
 """
 ```julia
-alert!(cm::AbstractComponentModifier, s::Striing) -> ::Nothing
+alert!(cm::AbstractComponentModifier, s::String) -> ::Nothing
 ```
----
-Alerts the client with the `String` `s` in a callback.
+Alerts the client with the `String` `s` in a callback. This will present a small 
+dialog popup on the client's system with `s` as the message.
 ```example
 module Server
 using Toolips
@@ -1313,7 +1432,6 @@ alert!(cm::AbstractComponentModifier, s::String) = push!(cm.changes, "alert('$s'
 ```julia
 focus!(cm::AbstractComponentModifier, name::String) -> ::Nothing
 ```
----
 Focuses the `Component` provided in `name` in a callback from the `Client`. `name` will be either 
 a `Component`, or the `Component`'s `name`. `focus!` will put the user's cursor/text input into the element. 
 The inverse to `focus!` is `blur!`.
@@ -1331,14 +1449,16 @@ end
 ```
 """
 function focus!(cm::AbstractComponentModifier, name::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
     push!(cm.changes, "document.getElementById('$name').focus();")
 end
 
 """
 ```julia
-blur!(cm::AbstractComponentModifier, name::String) -> ::Nothing
+blur!(cm::AbstractComponentModifier, name::Any) -> ::Nothing
 ```
----
 Un-focuses the `Component` provided in `name` in a callback from the `Client`. `name` will be either 
 a `Component`, or the `Component`'s `name`. This will unselect the currently focused element, the inverse of 
 `focus!`
@@ -1362,19 +1482,29 @@ export home, start!
 end
 ```
 """
-function blur!(cm::AbstractComponentModifier, name::String)
+function blur!(cm::AbstractComponentModifier, name::Any)
+    if typeof(name) <: AbstractComponent
+        name = name.name
+    end
     push!(cm.changes, "document.getElementById('$name').blur();")
     nothing::Nothing
 end
 
 """
 ```julia
-redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0) -> ::Nothing
+redirect!(cm::AbstractComponentModifier, url::AbstractString, ...; new_tab::Bool = false) -> ::Nothing
 ```
----
 `redirect!` will cause the client to send a `GET` request to `url`. `delay` can be used to add a millisecond delay. 
 This can also be used for navigating users around your website. It might also be useful to check out `redirect_args!` 
     for redirecting a `ClientModifier` with arguments.
+```julia
+# regular redirect:
+redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; new_tab::Bool = false) -> ::Nothing
+
+# redirect a client with arguments from a `ClientModifier`.
+redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
+delay::Int64 0, new_tab::Bool = false) ->::Nothing
+```
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1383,6 +1513,28 @@ home = route("/") do c::Connection
         redirect!(cl, "https://github.com/")
     end
     write!(c, hange)
+end
+
+# redirecting with arguments (no `ToolipsSession` required!):
+function make_searchbar(text::String)
+    scontainer = div("searchcontainer")
+    style!(scontainer, "background" => "transparent", 
+    "left" => 18perc, "width" => 92perc, "z-index" => "10", "display" => "flex")
+    sbar = a("searchbar", text = "enter search ...", contenteditable = true)
+    barstyle = ("padding" => 5px, "border-radius" => 1px, "background-color" => "#0b0930", "color" => "white", 
+    "font-weight" => "bold", "font-size" => 15pt)
+    style!(sbar, "width" => 40percent, "width" => 85perc, "min-width" => 85perc, barstyle ...)
+    sbutton = button("sbutton", text = "search")
+    style!(sbutton, barstyle ...)
+    on(sbar, "click") do cl
+        set_text!(cl, sbar, "")
+    end
+    on(sbutton, "click") do cl
+        proptext = get_text(cl, "searchbar")
+        redirect_args!(cl, "/docs", :search => proptext)
+    end
+    push!(scontainer, sbar, sbutton)
+    scontainer
 end
 ```
 """
@@ -1396,16 +1548,26 @@ function redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::In
     function () {window.location.href = "$url";}, $delay);""")
 end
 
+function redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
+    delay::Int64 = 0, new_tab::Bool = false)
+    args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
+    if new_tab
+        push!(cm.changes, """setTimeout(
+        function () {window.open('$url', '_blank').focus();}, $delay);""")
+        return
+    end
+    push!(cm.changes, """setTimeout(
+    function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
+    nothing::Nothing
+end
+
+# TODO deprecate `redirect_args!`
+
 """
 ```julia
 redirect_args!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...) -> ::Nothing
 ```
----
-`redirect_args!` is used to change redirects based on arguments entirely on the client side. In most cases, we will be using `redirect!` to 
-move clients to a different page -- even with a `ClientModifier`. This provides a tool for the exception, where we want to work with `Component` 
-properties on the client side. We are able to get `Component{:property}`'s back from a `ClientModifier` by using `getindex` or `get_text`. Note that this 
-`ComponentProperty` is not a Julia-bound type, this is a representation of that property in JavaScript which is ran without Julia on the client. 
-In order to run callbacks on the server, instead just use `ToolipsSession` and provide a `Connection` to `on`. (`using ToolipsSession; ?(on)`)
+`redirect_args` is now **deprecated**, please see `redirect!` instead.
 #### example
 The following example is from the `Toolips` documentation site's searchbar. This example uses `get_text` to retrieve the text property. Note that 
 `getindex` is used for regular properties, whereas `get_text` is exclusively used for text.
@@ -1434,6 +1596,7 @@ end
 """
 function redirect_args!(cm::AbstractClientModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
     delay::Int64 = 0)
+    @warn """redirect_args! is deprecated in favor of redirect! and will not be present in `ToolipsServables` 0.2+"""
     args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
@@ -1444,7 +1607,6 @@ end
 ```julia
 next!(f::Function, cl::AbstractComponentModifier, comp::Any) -> ::Nothing
 ```
----
 `next!` creates a sequence of events to occur after a component's transition as ended. `comp` can be 
 the component's `name` or the `Component` itself. Note that the `Component` has to be in a transition to 
 use `next!`, which means we will need to mutate its style. For simply creating a delay, there is `sleep!` -- 
@@ -1473,6 +1635,7 @@ end
 
 start!(AmericanServer)
 ```
+- See also: `transition!`, `keyframes!`, `on`, `alert!`, `set_text!`
 """
 function next!(f::Function, cl::AbstractComponentModifier, comp::Any)
     if typeof(comp) <: AbstractComponent
@@ -1499,8 +1662,8 @@ end
 ```julia
 transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...) -> ::Nothing
 ```
-Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a `Pair{String, Vector{String}}`. 
-    The keys of the pairs will be time increments, likely using `s` or `ms`, and the values will be 
+Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a list `Tuple` (provided as arguments) of
+    `Pair{String, Vector{Pair{String, String}}}`. The keys of the pairs will be time increments, likely using `s` or `ms`, and the values will be 
     the styles associated with that portion of the animation.
 ```example
 newcomp = Gattino.div("sss")
@@ -1515,7 +1678,8 @@ on(newcomp, "click") do cl::ClientModifier
         "1s" => ["background-color" => "green"]] ... )
 end
 ```
-Note that some style has to change, but it can be arbitrary.
+Note that some style has to change for a to occur, but the transition can be done on an 
+    arbitrary style or a style that does not apply to the `Component`.
 ```julia
 newcomp = Gattino.div("sss")
 style!(newcomp, "width" => 200px, "height" => 200px, "background-color" => "green")
@@ -1544,13 +1708,15 @@ end
 ```julia
 update!(cm::AbstractComponentModifier, ppane::Any, plot::Any) -> ::Nothing
 ```
----
 `update!` is used to put a Julia object into a `Component` in a callback. This `Function` will 
-use `show(io::IO, ::MIME{Symbol("text/html")}, PLOT::Any)` with your type. This being considered, ensure 
-this binding exists.
+use `show(io::IO, ::MIME{Symbol("text/html")}, T::MyType)` with your type. Ensure this binding exists, 
+or it will not work with this function.
 """
 function update!(cm::AbstractComponentModifier, ppane::Any, plot::Any)
-    io::IOBuffer = IOBuffer();
+    if typeof(comp) <: AbstractComponent
+        comp = comp.name
+    end
+    io::IOBuffer = IOBuffer()
     show(io, "text/html", plot)
     data::String = String(io.data)
     data = replace(data,
@@ -1562,11 +1728,10 @@ end
 ```julia
 update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any, filetype::String = "png") -> ::Nothing
 ```
----
 This `Function` is used to update the `Base64` of a given `base64_img` inside of a callback. `name` in this case will 
 be the `Component` or the `Component`'s `name` which should hold the image (this should be a `Component{:img}` or the name of one.)
-##### example
 ```julia
+# example; using Base64 to show `Plots` plot:
 module Example
 using Toolips
 using Toolips.Components
@@ -1594,4 +1759,5 @@ function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
     close(b64)
     mysrc::String = String(io.data)
     cm[name] = "src" => "data:image/$filetype;base64," * mysrc
+    nothing::Nothing
 end

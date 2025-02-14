@@ -39,7 +39,7 @@ c = Toolips.SpoofConnection()
 write!(c, myd)
 ```
 ### toolips servables
-`ToolipsServables` provides an extensible HTML and CSS templating platform centralized on parametric typing and extensibility. This package provides a simple API for creating beautiful websites to write to responses through both files and a *julianized* API.
+`ToolipsServables` provides an extensible HTML and CSS templating platform centralized on parametric typing and extensibility. This package provides a simple API for creating beautiful websites and writing responses for files, HTML elements, CSS classes, Javascript, and CSS keyframe animations.
 ###### map
 - [quick start](#toolips-servables)
   - [documentation](#documentation)
@@ -47,6 +47,7 @@ write!(c, myd)
   - [components](#components)
 - [contributing](#contributing-guidelines)
 ##### documentation
+- (almost deployed :))
 ##### files
 Alongside an interface for templating HTML files within Julia, `ToolipsServables` also includes a parametric `File` type. Files will convert into a read `String` of themselves when `string` is used on them. 
 ```julia
