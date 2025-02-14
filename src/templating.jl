@@ -96,7 +96,7 @@ To make a `Component` that isn't on this list, simply provide `Component{:tag}` 
 new_circ = Component{:circle}()
 ```
 """
-function elements end
+function templating end
 
 """
 ```julia

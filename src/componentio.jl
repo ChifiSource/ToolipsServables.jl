@@ -111,7 +111,8 @@ function htmlcomponent(raw::String, component_name::String)
         throw("could not find component $component_name in page.")
         @info "raw HTML dump (does not contain $component_name): $raw"
     end
-    tag_begin = findlast("<", minimum(found_position) - 1)
+    found_position = minimum(found_position)
+    tag_begin = findprev("<", )
 end
 
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
@@ -124,6 +125,7 @@ md_string(comp::Component{:h4}) = "#### $(comp[:text])\n"
 md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
 md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
 md_string(comp::Component{:hr}) = "---\n"
+md_string(comp::Component{:li}) = "- $(comp[:text])\n"
 md_string(comp::Component{:code}) = begin
     "```\n$(comp[:text])\n```"
 end
@@ -140,6 +142,42 @@ end
 function componentmd(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]
 end
+
+"""
+```julia
+interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...) -> ::String
+```
+Interpolates values and components into any file, simply provide a `\$` before the component's name, or value's name. The value's name 
+will be provided as the key-word argument key. Returns a `String`, the interpolated file.
+```html
+(example.html)
+<div>
+\$navbar
+<h1>hello world</h1>
+\$visit_n
+</div>
+```
+```julia
+using ToolipsServables
+f = File("example.html")
+pages = ("home", "about")
+navbar = div("navbar", children = [a("menu\$n", text = n) for n in pages], align = "center")
+ret = interpolate(f, navbarm visit_n = 1)
+```
+"""
+function interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...)
+    rawfile::String = read(dir, String)
+    [begin
+        rawc = string(comp)
+        rawfile = replace(rawfile, "\$$(comp.name)" => rawc)
+    end for comp in components]
+    [begin
+        rawfile = replace(rawfile, "\$$(arg[1])" => arg[2])
+    end for arg in args]
+    write!(c, rawfile)
+    string(rawfile)
+end
+
 
 """
 ```julia
@@ -203,40 +241,4 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
     end for name_func in fillfuncs]
     comp[:text] = raw
     nothing::Nothing
-end
-
-"""
-```julia
-interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...) -> ::String
-```
-Interpolates values and components into any file, simply provide a `\$` before the component's name, or value's name. The value's name 
-will be provided as the key-word argument key. Returns a `String`, the interpolated file.
----
-```html
-(example.html)
-<div>
-\$navbar
-<h1>hello world</h1>
-\$visit_n
-</div>
-```
-```julia
-using ToolipsServables
-f = File("example.html")
-pages = ("home", "about")
-navbar = div("navbar", children = [a("menu\$n", text = n) for n in pages], align = "center")
-ret = interpolate(f, navbarm visit_n = 1)
-```
-"""
-function interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...)
-    rawfile::String = read(dir, String)
-    [begin
-        rawc = string(comp)
-        rawfile = replace(rawfile, "\$$(comp.name)" => rawc)
-    end for comp in components]
-    [begin
-        rawfile = replace(rawfile, "\$$(arg[1])" => arg[2])
-    end for arg in args]
-    write!(c, rawfile)
-    string(rawfile)
 end

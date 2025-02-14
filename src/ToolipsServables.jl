@@ -111,6 +111,8 @@ use `?(templating)` to learn more about HTML templating with Toolips.
   - `tr`
   - `th`
   - `td`
+  - `tmd`
+  - `base64img`
 - `keyframes`
 - `style!`
 - `push!`
@@ -120,6 +122,7 @@ use `?(templating)` to learn more about HTML templating with Toolips.
 - `numberinput`
 - `rangeslider`
 - `option`
+- `options`
 - `select`
 - `checkbox`
 - `colorinput`
@@ -127,6 +130,7 @@ use `?(templating)` to learn more about HTML templating with Toolips.
 - `cursor`
 - `context_menu!`
 - `keyinput`
+- `textdiv_caret_tracker!`
 - `WebMeasure{format <: Any}`
 - `measures` (`?measures`)
   - `px`
