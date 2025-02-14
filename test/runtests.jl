@@ -111,7 +111,7 @@ end
 
 @testset "IO" verbose = true begin
     @testset "input (htmlcomponent)" begin
-        html = """<div id="sample"><sample id="textbox">text</sample></div><example><sampletext/example>"""
+        html = """<div id="sample"><sample id="textbox" propr="hello">text</sample></div><example><sampletext/example>"""
         comps = htmlcomponent(html)
         @test "sample" in comps
         @test "textbox" in comps
@@ -122,6 +122,11 @@ end
         html = """<a id="sample" contenteditable="true"></a>"""
         comps = htmlcomponent(html)
         @test comps[1]["contenteditable"] == "true"
+        html = """<div id="sample"><sample id="textbox" propr="hello">text</sample></div><example><sampletext/example>"""
+        comps = htmlcomponent(html)
+        comp = htmlcomponent(html, "textbox")
+        @test comp["text"] == "text"
+        @test comp["propr"] == "hello"
     end
     @testset "output (String, IOBuffer)" begin
         io = IOBuffer()
