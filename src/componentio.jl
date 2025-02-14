@@ -70,7 +70,7 @@ function htmlcomponent(s::String, names_only::Bool = true)
             text = s[minimum(argfinish) + 1:minimum(finisher) - 2]
         end
         push!(properties, :text => text)
-        push!(comps, Component{Symbol(tag)}(name, tag, props))
+        push!(comps, Component{Symbol(tag)}(name, tag, properties))
     end
     return(comps)
 end
@@ -112,7 +112,16 @@ function htmlcomponent(raw::String, component_name::String)
         @info "raw HTML dump (does not contain $component_name): $raw"
     end
     found_position = minimum(found_position)
-    tag_begin = findprev("<", )
+    tag_begin::UnitRange{Int64} = findprev("<", raw, found_position)
+    stop_tag::Int64 = maximum(findnext(">", raw, found_position))
+    tag::Symbol = Symbol(raw[minimum(tag_begin) + 1:found_position - 2])
+    tagend::Int64 = minimum(findnext("</$tag>", raw, found_position))
+    text::String = raw[stop_tag + 1:tagend - 1]
+    splits::Vector{SubString} = split(raw[found_position + 1:stop_tag], " ")
+    Component{tag}(name, text = text, [begin
+        splits = split(property, "=")
+        string(splits[1]) => splits[2]
+    end for property in splits] ...)::Component{tag}
 end
 
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
