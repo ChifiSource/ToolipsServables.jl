@@ -17,6 +17,8 @@ htmlcomponent(s::String, args ...) -> ::Vector{<:AbstractComponent}
 
 htmlcomponent(s::String, names_only::Bool = true) -> ::Vector{Component{<:Any}}
 htmlcomponent(s::String, readonly::Vector{String}) -> ::Vector{Component{<:Any}}
+htmlcomponent(raw::String, component_name::String) -> ::Component{<:Any} # <- expiremental for 1.8
+            # (this is set to be a hyper-optimized dispatch and could be partially broken or buggy.)
 ```
 Reads components from an HTML `String`. Providing `names_only` as `false` will 
 read elements without an `id` as well. Not doing so of course speeds up parsing of 
@@ -108,8 +110,9 @@ end
 function htmlcomponent(raw::String, component_name::String)
     found_position = findfirst("id=\"$component_name\"", raw)
     if isnothing(found_position)
-        throw("could not find component $component_name in page.")
+        @warn "could not find component $component_name !"
         @info "raw HTML dump (does not contain $component_name): $raw"
+        throw("could not find component $component_name in page.")
     end
     found_position = minimum(found_position)
     tag_begin::UnitRange{Int64} = findprev("<", raw, found_position)
@@ -117,10 +120,14 @@ function htmlcomponent(raw::String, component_name::String)
     tag::Symbol = Symbol(raw[minimum(tag_begin) + 1:found_position - 2])
     tagend::Int64 = minimum(findnext("</$tag>", raw, found_position))
     text::String = raw[stop_tag + 1:tagend - 1]
+    text = replace(text, "<br>" => "\n", "<div>" => "", 
+        "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
+        "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?")
     splits::Vector{SubString} = split(raw[found_position + 1:stop_tag], " ")
-    Component{tag}(name, text = text, [begin
+    Component{tag}(component_name, text = text, [begin
         splits = split(property, "=")
-        string(splits[1]) => splits[2]
+        replace(string(splits[1]), "\"" => "", " " => "", ">" => "", "<" => "") => replace(string(splits[2]), 
+        "\"" => "", " " => "", ">" => "", "<" => "")
     end for property in splits] ...)::Component{tag}
 end
 
