@@ -1596,7 +1596,7 @@ end
 """
 function redirect_args!(cm::AbstractClientModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
     delay::Int64 = 0)
-    @warn """redirect_args! is deprecated in favor of redirect! and will not be present in `ToolipsServables` 0.2+"""
+    @warn """redirect_args! is deprecated in favor of a new dispatch for redirect! and will not be present in `ToolipsServables` 0.2+"""
     args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
