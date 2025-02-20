@@ -126,8 +126,13 @@ function htmlcomponent(raw::String, component_name::String)
     splits::Vector{SubString} = split(raw[found_position + 1:stop_tag], " ")
     Component{tag}(component_name, text = text, [begin
         splits = split(property, "=")
-        replace(string(splits[1]), "\"" => "", " " => "", ">" => "", "<" => "") => replace(string(splits[2]), 
-        "\"" => "", " " => "", ">" => "", "<" => "")
+        if length(splits) < 2
+            "" => ""
+        else
+            replace(string(splits[1]), "\"" => "", " " => "", ">" => "", "<" => "") => replace(string(splits[2]), 
+            "\"" => "", " " => "", ">" => "", "<" => "")
+        end
+        
     end for property in splits] ...)::Component{tag}
 end
 

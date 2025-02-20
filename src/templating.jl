@@ -1596,7 +1596,7 @@ end
 """
 function redirect_args!(cm::AbstractClientModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
     delay::Int64 = 0)
-    @warn """redirect_args! is deprecated in favor of redirect! and will not be present in `ToolipsServables` 0.2+"""
+    @warn """redirect_args! is deprecated in favor of a new dispatch for redirect! and will not be present in `ToolipsServables` 0.2+"""
     args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
@@ -1728,7 +1728,7 @@ end
 ```julia
 update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any, filetype::String = "png") -> ::Nothing
 ```
-This `Function` is used to update the `Base64` of a given `base64_img` inside of a callback. `name` in this case will 
+This `Function` is used to update the `Base64` of a given `base64img` inside of a callback. `name` in this case will 
 be the `Component` or the `Component`'s `name` which should hold the image (this should be a `Component{:img}` or the name of one.)
 ```julia
 # example; using Base64 to show `Plots` plot:
