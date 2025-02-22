@@ -1165,10 +1165,10 @@ end
 function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
     firstname = p[1]
     secondname = p[2]
-    if firstname <: AbstractComponent
+    if typeof(firstname) <: AbstractComponent
         firstname = firstname.name
     end
-    if secondname <: AbstractComponent
+    if typeof(secondname) <: AbstractComponent
         secondname = secondname.name
     end
     push!(cm.changes, "
