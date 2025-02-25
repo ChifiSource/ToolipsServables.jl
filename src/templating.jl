@@ -811,7 +811,8 @@ const to = "to"
 
 translateX(a::Any) = "translateX($a)"
 translateY(a::Any) = "translateY($a)"
-scale(a::Any) = "skew($a)"
+scale(a::Any) = "scale($a)"
+skew(a::Any) = "skew($a)"
 
 """
 ```julia
