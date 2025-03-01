@@ -118,8 +118,13 @@ function htmlcomponent(raw::String, component_name::String)
     tag_begin::UnitRange{Int64} = findprev("<", raw, found_position)
     stop_tag::Int64 = maximum(findnext(">", raw, found_position))
     tag::Symbol = Symbol(raw[minimum(tag_begin) + 1:found_position - 2])
-    tagend::Int64 = minimum(findnext("</$tag>", raw, found_position))
-    text::String = raw[stop_tag + 1:tagend - 1]
+    tagend = findnext("</$tag>", raw, found_position)
+    if isnothing(tagend)
+        text = ""
+    else
+        text::String = raw[stop_tag + 1:minimum(tagend) - 1]
+        tagend = nothing
+    end
     text = replace(text, "<br>" => "\n", "<div>" => "", 
         "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
         "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?")
