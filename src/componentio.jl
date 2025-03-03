@@ -118,27 +118,58 @@ function htmlcomponent(raw::String, component_name::String)
     tag_begin::UnitRange{Int64} = findprev("<", raw, found_position)
     stop_tag::Int64 = maximum(findnext(">", raw, found_position))
     tag::Symbol = Symbol(raw[minimum(tag_begin) + 1:found_position - 2])
-    tagend::Int64 = minimum(findnext("</$tag>", raw, found_position))
-    text::String = raw[stop_tag + 1:tagend - 1]
+    tagend = findnext("</$tag>", raw, found_position)
+    if isnothing(tagend)
+        text = ""
+    else
+        text::String = raw[stop_tag + 1:minimum(tagend) - 1]
+        tagend = nothing
+    end
     text = replace(text, "<br>" => "\n", "<div>" => "", 
         "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
         "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?")
-    splits::Vector{SubString} = split(raw[found_position + 1:stop_tag], " ")
+    splits::Vector{SubString} = split(raw[found_position:stop_tag], "\" ")
     Component{tag}(component_name, text = text, [begin
         splits = split(property, "=")
         if length(splits) < 2
             "" => ""
         else
-            replace(string(splits[1]), "\"" => "", " " => "", ">" => "", "<" => "") => replace(string(splits[2]), 
-            "\"" => "", " " => "", ">" => "", "<" => "")
+            replace(string(splits[1]), "\"" => "", ">" => "", "<" => "") => replace(string(splits[2]), 
+            "\"" => "", ">" => "", "<" => "")
         end
-        
     end for property in splits] ...)::Component{tag}
 end
 
+
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
 
+"""
+```julia
+md_string(comp::Component{<:Any}) -> ::String
+```
+Produces a Markdown version of `Component` output. For instance, for a `Component{:a}` we 
+will get a markdown link.
+```julia
+md_string(comp::Component{<:Any})
+md_string(comp::Component{:h1})
+md_string(comp::Component{:h2})
+md_string(comp::Component{:h3})
+md_string(comp::Component{:h4})
+md_string(comp::Component{:h5})
+md_string(comp::Component{:h6})
+md_string(comp::Component{:hr})
+md_string(comp::Component{:li})
+md_string(comp::Component{:code})
+md_string(comp::Component{:b})
+md_string(comp::Component{:i})
+md_string(comp::Component{:a})
+md_string(comps::Vector{<:AbstractComponent})
+```
+description of method list
+- See also: `htmlcomponent`, `string(::Component{<:Any})`, `Component`
+"""
 md_string(comp::Component{<:Any}) = comp[:text]
+
 md_string(comp::Component{:h1}) = "# $(comp[:text])\n"
 md_string(comp::Component{:h2}) = "## $(comp[:text])\n"
 md_string(comp::Component{:h3}) = "### $(comp[:text])\n"
@@ -160,7 +191,7 @@ md_string(comp::Component{:a}) = begin
     end
 end
 
-function componentmd(comps::Vector{<:AbstractComponent})
+function md_string(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]
 end
 

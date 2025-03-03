@@ -811,7 +811,8 @@ const to = "to"
 
 translateX(a::Any) = "translateX($a)"
 translateY(a::Any) = "translateY($a)"
-scale(a::Any) = "skew($a)"
+scale(a::Any) = "scale($a)"
+skew(a::Any) = "skew($a)"
 
 """
 ```julia
@@ -1165,10 +1166,10 @@ end
 function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
     firstname = p[1]
     secondname = p[2]
-    if firstname <: AbstractComponent
+    if typeof(firstname) <: AbstractComponent
         firstname = firstname.name
     end
-    if secondname <: AbstractComponent
+    if typeof(secondname) <: AbstractComponent
         secondname = secondname.name
     end
     push!(cm.changes, "
@@ -1556,48 +1557,6 @@ function redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pai
         function () {window.open('$url', '_blank').focus();}, $delay);""")
         return
     end
-    push!(cm.changes, """setTimeout(
-    function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
-    nothing::Nothing
-end
-
-# TODO deprecate `redirect_args!`
-
-"""
-```julia
-redirect_args!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...) -> ::Nothing
-```
-`redirect_args` is now **deprecated**, please see `redirect!` instead.
-#### example
-The following example is from the `Toolips` documentation site's searchbar. This example uses `get_text` to retrieve the text property. Note that 
-`getindex` is used for regular properties, whereas `get_text` is exclusively used for text.
-```example
-function make_searchbar(text::String)
-    scontainer = div("searchcontainer")
-    style!(scontainer, "background" => "transparent", 
-    "left" => 18perc, "width" => 92perc, "z-index" => "10", "display" => "flex")
-    sbar = a("searchbar", text = "enter search ...", contenteditable = true)
-    barstyle = ("padding" => 5px, "border-radius" => 1px, "background-color" => "#0b0930", "color" => "white", 
-    "font-weight" => "bold", "font-size" => 15pt)
-    style!(sbar, "width" => 40percent, "width" => 85perc, "min-width" => 85perc, barstyle ...)
-    sbutton = button("sbutton", text = "search")
-    style!(sbutton, barstyle ...)
-    on(sbar, "click") do cl
-        set_text!(cl, sbar, "")
-    end
-    on(sbutton, "click") do cl
-        proptext = get_text(cl, "searchbar")
-        redirect_args!(cl, "/docs", :search => proptext)
-    end
-    push!(scontainer, sbar, sbutton)
-    scontainer
-end
-```
-"""
-function redirect_args!(cm::AbstractClientModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
-    delay::Int64 = 0)
-    @warn """redirect_args! is deprecated in favor of a new dispatch for redirect! and will not be present in `ToolipsServables` 0.2+"""
-    args = join(("'$(w[1])=' + $(w[2].name)" for w in with), " + ")
     push!(cm.changes, """setTimeout(
     function () {window.location.href = "$url" + "?" + $args;}, $delay);""")
     nothing::Nothing
