@@ -159,7 +159,6 @@ md_string(comp::Component{:h5})
 md_string(comp::Component{:h6})
 md_string(comp::Component{:hr})
 md_string(comp::Component{:li})
-md_string(comp::Component{:a})
 md_string(comp::Component{:code})
 md_string(comp::Component{:b})
 md_string(comp::Component{:i})
@@ -179,7 +178,6 @@ md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
 md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
 md_string(comp::Component{:hr}) = "---\n"
 md_string(comp::Component{:li}) = "- $(comp[:text])\n"
-md_string(comp::Component{:a}) = "[$(comp[:text])]($(comp[:href]))"
 md_string(comp::Component{:code}) = begin
     "```\n$(comp[:text])\n```"
 end
