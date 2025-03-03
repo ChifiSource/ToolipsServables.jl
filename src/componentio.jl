@@ -140,9 +140,37 @@ function htmlcomponent(raw::String, component_name::String)
     end for property in splits] ...)::Component{tag}
 end
 
+
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
 
+"""
+```julia
+md_string(comp::Component{<:Any}) -> ::String
+```
+Produces a Markdown version of `Component` output. For instance, for a `Component{:a}` we 
+will get a markdown link.
+```julia
+md_string(comp::Component{<:Any})
+md_string(comp::Component{:h1})
+md_string(comp::Component{:h2})
+md_string(comp::Component{:h3})
+md_string(comp::Component{:h4})
+md_string(comp::Component{:h5})
+md_string(comp::Component{:h6})
+md_string(comp::Component{:hr})
+md_string(comp::Component{:li})
+md_string(comp::Component{:a})
+md_string(comp::Component{:code})
+md_string(comp::Component{:b})
+md_string(comp::Component{:i})
+md_string(comp::Component{:a})
+md_string(comps::Vector{<:AbstractComponent})
+```
+description of method list
+- See also: `htmlcomponent`, `string(::Component{<:Any})`, `Component`
+"""
 md_string(comp::Component{<:Any}) = comp[:text]
+
 md_string(comp::Component{:h1}) = "# $(comp[:text])\n"
 md_string(comp::Component{:h2}) = "## $(comp[:text])\n"
 md_string(comp::Component{:h3}) = "### $(comp[:text])\n"
@@ -151,6 +179,7 @@ md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
 md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
 md_string(comp::Component{:hr}) = "---\n"
 md_string(comp::Component{:li}) = "- $(comp[:text])\n"
+md_string(comp::Component{:a}) = "[$(comp[:text])]($(comp[:href]))"
 md_string(comp::Component{:code}) = begin
     "```\n$(comp[:text])\n```"
 end
@@ -164,7 +193,7 @@ md_string(comp::Component{:a}) = begin
     end
 end
 
-function componentmd(comps::Vector{<:AbstractComponent})
+function md_string(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]
 end
 
