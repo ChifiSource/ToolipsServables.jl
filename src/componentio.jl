@@ -126,7 +126,7 @@ function htmlcomponent(raw::String, component_name::String)
         tagend = nothing
     end
     text = replace(text, "<br>" => "\n", "<div>" => "", 
-        "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
+        "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "&lt;" => "<", 
         "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?")
     splits::Vector{SubString} = split(raw[found_position:stop_tag], "\" ")
     Component{tag}(component_name, text = text, [begin
