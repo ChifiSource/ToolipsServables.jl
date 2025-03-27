@@ -307,7 +307,7 @@ mysel = select("mainselect", myopts, value = "henry")
 ```
 """
 function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; value::Any = options[begin][:text], args ...)
-    thedrop::Component{:select} = Component{:select}(name, p ..., args ...)
+    thedrop::Component{:select} = Component{:select}(name, p ..., value = value, args ...)
     thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
     thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
