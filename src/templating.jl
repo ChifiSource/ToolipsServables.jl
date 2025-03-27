@@ -1019,6 +1019,7 @@ end
 ```
 """
 function funccl(cm::ClientModifier = ClientModifier(), name::String = cm.name)
+    name = replace(name, "-" => "")
     """function $(name)(event){$(join(cm.changes))}"""
 end
 
