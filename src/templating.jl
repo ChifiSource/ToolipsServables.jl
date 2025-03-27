@@ -306,9 +306,9 @@ myopts = options("emmy", "henry", "jessica")
 mysel = select("mainselect", myopts, value = "henry")
 ```
 """
-function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; args ...)
+function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; value::Any = options[begin][:text], args ...)
     thedrop::Component{:select} = Component{:select}(name, p ..., args ...)
-    thedrop["oninput"] = "this.setAttribute('value',this.value);"
+    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
     thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
 end
@@ -326,9 +326,9 @@ mysel = select("mainselect", myopts, value = "henry")
 """
 options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt) for opt in options])
 
-function select(name::String,  p::Pair{String, <:Any} ...; args ...)
-    thedrop = Component{:select}(name, p ...; args ...)
-    thedrop["oninput"] = "this.setAttribute('value',this.value);"
+function select(name::String,  p::Pair{String, <:Any} ...; value::Any = "", args ...)
+    thedrop = Component{:select}(name, p ...; value = value, args ...)
+    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
     thedrop::Component{:select}
 end
 
@@ -1019,6 +1019,7 @@ end
 ```
 """
 function funccl(cm::ClientModifier = ClientModifier(), name::String = cm.name)
+    name = replace(name, "-" => "")
     """function $(name)(event){$(join(cm.changes))}"""
 end
 
