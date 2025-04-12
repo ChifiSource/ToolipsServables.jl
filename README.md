@@ -5,6 +5,7 @@
 [![version](https://juliahub.com/docs/General/ToolipsServables/stable/version.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables)
 [![deps](https://juliahub.com/docs/General/ToolipsServables/stable/deps.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables?t=2)
 [![pkgeval](https://juliahub.com/docs/General/ToolipsServables/stable/pkgeval.svg)](https://juliahub.com/ui/Packages/General/ToolipsServables)
+[docs](https://chifidocs.com/toolips/ToolipsServables)
 
 </div>
 
@@ -47,7 +48,7 @@ write!(c, myd)
   - [components](#components)
 - [contributing](#contributing-guidelines)
 ##### documentation
-- (almost deployed :))
+- [chifidocs documentation](https://chifidocs.com/toolips/ToolipsServables)
 ##### files
 Alongside an interface for templating HTML files within Julia, `ToolipsServables` also includes a parametric `File` type. Files will convert into a read `String` of themselves when `string` is used on them. 
 ```julia
