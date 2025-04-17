@@ -217,6 +217,7 @@ style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...)
 # set a `Component`'s class to a style's name.
 style!(comp::Component{<:Any}, sty::Style)
+style!(c::Component{<:Any}, classname::String)
 # styles a style with the animation `anim`(be sure to write `anim`):
 style!(sty::Style, anim::AbstractAnimation)
 # styles a component with the animation `anim` (be sure to write `anim`):
@@ -243,6 +244,8 @@ function style!(c::Component{<:Any}, s::Pair{String, <:Any} ...)
 end
 
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+
+style!(c::Component{<:Any}, classname::String) = c[:class] = classname
 
 function style!(sty::AbstractComponent, anim::AbstractAnimation)
     iters = anim.iterations
@@ -993,7 +996,11 @@ setindex!(cm::AbstractClientModifier, name::String, property::String, comp::Comp
 end
 
 getindex(cl::AbstractClientModifier, name::String, prop::String) = begin
-    Component{:property}("document.getElementById('$name').getAttribute('$prop');")
+    if prop == "text"
+        Component{:property}("document.getElementById('$name').textContent;")
+    else
+        Component{:property}("document.getElementById('$name').getAttribute('$prop');")
+    end
 end
 
 string(cl::AbstractComponentModifier) = join(cm.changes)
