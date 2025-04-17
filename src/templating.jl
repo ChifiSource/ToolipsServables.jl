@@ -1437,6 +1437,8 @@ end
 """
 alert!(cm::AbstractComponentModifier, s::String) = push!(cm.changes, "alert('$s');"); nothing::Nothing
 
+alert!(cm::AbstractComponentModifier, prop::Component{:property}) = push!(cm.changes, "alert($(string(s)));")
+
 """
 ```julia
 focus!(cm::AbstractComponentModifier, name::String) -> ::Nothing
