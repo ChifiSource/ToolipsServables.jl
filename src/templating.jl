@@ -988,7 +988,7 @@ end
 ```
 """
 function get_text(cl::AbstractClientModifier, name::String)
-    Component{:property}("document.getElementById('$name').textContent;")
+    Component{:property}("document.getElementById('$name').textContent")
 end
 
 setindex!(cm::AbstractClientModifier, name::String, property::String, comp::Component{:property}) = begin
@@ -997,7 +997,7 @@ end
 
 getindex(cl::AbstractClientModifier, name::String, prop::String) = begin
     if prop == "text"
-        Component{:property}("document.getElementById('$name').textContent;")
+        Component{:property}("document.getElementById('$name').textContent")
     else
         Component{:property}("document.getElementById('$name').getAttribute('$prop');")
     end

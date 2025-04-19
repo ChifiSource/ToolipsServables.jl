@@ -1,3 +1,7 @@
+rep_in(s::String) = replace(s, "<br>" => "\n", "</br>" => "\n", "&nbsp;" => " ", 
+"&#40;" => "(", "&#41;" => ")", "&#34;" => "\"", "&#60;" => "<", "&#62;" => ">", 
+"&#36;" => "\$", "&lt;" => "<", "&gt;" => ">", "&#64;" => "@", "â€”" => "--")
+
 function html_properties(s::AbstractString)
     propvec::Vector{SubString} = split(s, " ")
     properties::Dict{Symbol, Any} = Dict{Symbol, String}(begin
@@ -96,9 +100,7 @@ function htmlcomponent(s::String, readonly::Vector{String})
                 name = properties["id"]
                 delete!(properties, "id")
             end
-            push!(properties, :text => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
-            "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
-            "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?"))
+            push!(properties, :text => rep_in(fulltxt))
             comp = Component{Symbol(tg)}(compname)
             comp.properties = properties
             comp::Component
@@ -125,9 +127,7 @@ function htmlcomponent(raw::String, component_name::String)
         text::String = raw[stop_tag + 1:minimum(tagend) - 1]
         tagend = nothing
     end
-    text = replace(text, "<br>" => "\n", "<div>" => "", 
-        "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "&lt;" => "<", 
-        "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?")
+    text = rep_in(text)
     splits::Vector{SubString} = split(raw[found_position:stop_tag], "\" ")
     Component{tag}(component_name, text = text, [begin
         splits = split(property, "=")
