@@ -351,7 +351,7 @@ function tmd(name::String, s::String = "", p::Pair{String, <:Any} ...;
     args ...)
     md = Markdown.parse(replace(s * "\n", "<" => "", ">" => "", "\"" => ""))
     htm::String = html(md)
-    div(name, text = htm, p ...; args ...)::Component{:div}
+    div(name, text = rep_in(htm), p ...; args ...)::Component{:div}
 end
 
 """
