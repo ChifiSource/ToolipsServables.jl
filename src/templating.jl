@@ -217,6 +217,7 @@ style!(c::AbstractComponent, s::Pair{String, <:Any} ...)
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...)
 # set a `Component`'s class to a style's name.
 style!(comp::Component{<:Any}, sty::Style)
+style!(c::Component{<:Any}, classname::String)
 # styles a style with the animation `anim`(be sure to write `anim`):
 style!(sty::Style, anim::AbstractAnimation)
 # styles a component with the animation `anim` (be sure to write `anim`):
@@ -243,6 +244,8 @@ function style!(c::Component{<:Any}, s::Pair{String, <:Any} ...)
 end
 
 style!(c::Component{<:Any}, child::String, p::Pair{String, String} ...) = style!(c[:children][child], p ...)
+
+style!(c::Component{<:Any}, classname::String) = c[:class] = classname
 
 function style!(sty::AbstractComponent, anim::AbstractAnimation)
     iters = anim.iterations
@@ -348,7 +351,7 @@ function tmd(name::String, s::String = "", p::Pair{String, <:Any} ...;
     args ...)
     md = Markdown.parse(replace(s * "\n", "<" => "", ">" => "", "\"" => ""))
     htm::String = html(md)
-    div(name, text = htm, p ...; args ...)::Component{:div}
+    div(name, text = rep_in(htm), p ...; args ...)::Component{:div}
 end
 
 """
@@ -985,7 +988,7 @@ end
 ```
 """
 function get_text(cl::AbstractClientModifier, name::String)
-    Component{:property}("document.getElementById('$name').textContent;")
+    Component{:property}("document.getElementById('$name').textContent")
 end
 
 setindex!(cm::AbstractClientModifier, name::String, property::String, comp::Component{:property}) = begin
@@ -993,7 +996,11 @@ setindex!(cm::AbstractClientModifier, name::String, property::String, comp::Comp
 end
 
 getindex(cl::AbstractClientModifier, name::String, prop::String) = begin
-    Component{:property}("document.getElementById('$name').getAttribute('$prop');")
+    if prop == "text"
+        Component{:property}("document.getElementById('$name').textContent")
+    else
+        Component{:property}("document.getElementById('$name').getAttribute('$prop');")
+    end
 end
 
 string(cl::AbstractComponentModifier) = join(cm.changes)
@@ -1429,6 +1436,8 @@ end
 ```
 """
 alert!(cm::AbstractComponentModifier, s::String) = push!(cm.changes, "alert('$s');"); nothing::Nothing
+
+alert!(cm::AbstractComponentModifier, prop::Component{:property}) = push!(cm.changes, "alert($(string(prop)));")
 
 """
 ```julia
