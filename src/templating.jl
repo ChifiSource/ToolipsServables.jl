@@ -572,6 +572,24 @@ end
 
 """
 ```julia
+dateinput(name::String, args ...; value::String = "1999-11-23", keyargs ...) -> ::Component{:input}
+```
+Creates a `Component{:input}` of type date input. The date is provided in the `YYYY-MM-DD` format, separated by 
+dashes. The default event for updating the value is binded to `onchange`.
+```example
+d_input = Components.dateinput("inp", value = "2025-06-23")
+
+on(d_input, "input") do cl::ClientModifier
+    alert!(cm, cl["inp", "value"])
+end
+```
+"""
+function dateinput(name::String, args ...; value::String = "1999-11-23", keyargs ...)
+    input(name, type = "date", onchange = "this.setAttribute('value',this.value);", value = value, args ...; keyargs ...)
+end
+
+"""
+```julia
 rangeslider(name::String, range::UnitRange{Int64} = 1:100, args::Pair{String, <:Any} ...;
 value::Integer = 50, step::Integer = 5) -> `Component{:input}`
 ```
