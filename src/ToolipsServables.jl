@@ -128,9 +128,38 @@ use `?(templating)` to learn more about HTML templating with Toolips.
 - `colorinput`
 - `progress`
 - `cursor`
-- `context_menu!`
 - `keyinput`
+
+- `context_menu!`
 - `textdiv_caret_tracker!`
+- `set_children!`
+- `set_text!`
+- `scroll_by!`
+- `scroll_to!`
+- `confirm_redirects!`
+- `free_redirects!`
+- `playanim!`
+- `pauseanim!`
+- `set_selection!`
+- `update_base64!`
+- `update!`
+- `transition!`
+- `next_transition!`
+- `next!`
+- `redirect!`
+- `blur!`
+- `focus!`
+- `alert!`
+- `set_style!`
+- `sleep!`
+- `insert!`
+- `append!`
+- `remove!`
+- `move!`
+
+- `on`
+- `bind`
+
 - `WebMeasure{format <: Any}`
 - `measures` (`?measures`)
   - `px`
