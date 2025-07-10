@@ -734,7 +734,7 @@ end
 
 """
 ```julia
-button_select(c::AbstractConnection, name::String, buttons::Vector{<:Servable}, 
+button_select(name::String, buttons::Vector{<:Servable}, 
 unselected::Vector{Pair{String, String}} = ["background-color" => "blue",
      "border-width" => 0px],
     selected::Vector{Pair{String, String}} = ["background-color" => "green",
@@ -747,7 +747,7 @@ will change along with the `value` property.
 
 ```
 """
-function button_select(c::AbstractConnection, name::String, buttons::Vector{<:Servable},
+function button_select(name::String, buttons::Vector{<:Servable},
     unselected::Vector{Pair{String, String}} = ["background-color" => "blue",
      "border-width" => 0px],
     selected::Vector{Pair{String, String}} = ["background-color" => "green",
@@ -1801,7 +1801,7 @@ component's `name` (`String`), or the `Component` itself.)
 
 ```
 """
-function set_selection!(cm::ComponentModifier, comp::Any, r::UnitRange{Int64})
+function set_selection!(cm::AbstractComponentModifier, comp::Any, r::UnitRange{Int64})
     if typeof(comp) <: Toolips.AbstractComponent
         comp = comp.name
     end
