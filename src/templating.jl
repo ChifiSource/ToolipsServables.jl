@@ -1355,6 +1355,10 @@ function append!(cm::AbstractComponentModifier, name::Any, child::AbstractCompon
     nothing::Nothing
 end
 
+
+append!(comp::Component{<:Any}, childs::Vector{<:AbstractComponent}) = push!(comp[:children], childs ...)
+append!(comp::Component{<:Any}, comp::Vector{<:AbstractComponent}) = push!(comp[:children], comp)
+
 """
 ```julia
 insert!(cm::AbstractComponentModifier, name::String, i::Int64, child::AbstractComponent) -> ::Nothing
@@ -1381,6 +1385,10 @@ function insert!(cm::AbstractComponentModifier, name::String, i::Int64, child::A
     txt::String = replace(string(child), "`" => "\\`", "\"" => "\\\"", "'" => "\\'")
     push!(cm.changes, "document.getElementById('$name').insertBefore(document.createRange().createContextualFragment(`$txt`), document.getElementById('$name').children[$(i - 1)]);")
     nothing::Nothing
+end
+
+insert!(comp::Component{<:Any}, i::Int64, child::AbstractComponent) = begin
+    insert!(comp[:children], i, child)
 end
 
 """
@@ -1440,6 +1448,9 @@ end
 
 """
 ```julia
+# component-mutating:
+
+# client-side callbacks:
 set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
 Sets the style of the `Component` `name` (provided as itself or its `Component.name`) to `sty` in a callback. 
@@ -1450,6 +1461,7 @@ using Toolips
 home = route("/") do c::Connection
     change = button("changer", text = "change text")
     style!(change, "color" => "white", "background-color" => "darkred")
+    set_style!(change, "color" => "black", "background-color" => "whitesmoke")
     on(change, "click") do cl::ClientModifier
         set_style!(cl, change, "background-color" => "green")
     end
@@ -1457,6 +1469,18 @@ home = route("/") do c::Connection
 end
 ```
 """
+function set_style! end
+
+set_style!(component::Component{<:Any}, pairs::Pair{String, <: Any} ...) = begin
+    component[:style] = join(("$(p[1]):$(p[2])" for p in pairs), ";")
+    nothing::Nothing
+end
+
+set_style!(sty::Style, pairs::Pair{String, <: Any} ...) = begin
+    sty.properties = Dict{Symbol, Any}(Symbol(p[1]) => string(p[2]) for p in pairs)
+    nothing::Nothing
+end
+
 function set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...)
     sstring::String = join(("$(p[1]):$(p[2])" for p in sty), ";")
     if typeof(name) <: AbstractComponent

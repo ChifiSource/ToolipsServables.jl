@@ -126,7 +126,15 @@ function htmlcomponent(raw::String, component_name::String)
     if isnothing(tagend)
         text = ""
     else
-        text::String = raw[stop_tag + 1:minimum(tagend) - 1]
+        try
+            text::String = raw[stop_tag + 1:minimum(tagend) - 1]
+        catch
+            try
+                text = raw[stop_tag + 1:minimum(tagend) - 2]
+            catch
+                text = raw[stop_tag + 2:minimum(tagend) - 1]
+            end
+        end
         tagend = nothing
     end
     text = rep_in(text)
