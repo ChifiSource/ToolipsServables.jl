@@ -430,51 +430,66 @@ end
 function textdiv_caret_tracker!(comp::Component{:div})
     name = comp.name
     caretpos = script("caretposition", text = """
-    function getCaretIndex$(name)(element) {
-  let position = 0;
-  const isSupported = typeof window.getSelection !== "undefined";
-  if (isSupported) {
-    const selection = window.getSelection();
-    if (selection.rangeCount !== 0) {
-      const range = window.getSelection().getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(element);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      position = preCaretRange.toString().length;
-    }
-  }
-  document.getElementById('$name').setAttribute('caret',position);
+function getCaretIndex$(name)(element) {
+	let position = 0;
+	const isSupported = typeof window.getSelection !== "undefined";
+	if (isSupported) {
+		const selection = window.getSelection();
+		if (selection.rangeCount !== 0) {
+			const range = window.getSelection().getRangeAt(0);
+			const preCaretRange = range.cloneRange();
+			preCaretRange.selectNodeContents(element);
+			preCaretRange.setEnd(range.endContainer, range.endOffset);
+			position = preCaretRange.toString().length;
+
+			// ADDITION: Count <br> and <div> elements as one character each
+			const nodeIterator = document.createNodeIterator(
+				preCaretRange.cloneContents(),
+				NodeFilter.SHOW_ELEMENT,
+				null
+			);
+			let currentNode;
+			while ((currentNode = nodeIterator.nextNode())) {
+				const tag = currentNode.tagName;
+				if (tag === "BR" || tag === "DIV") {
+					position += 1;
+				}
+			}
+		}
+	}
+	document.getElementById('$name').setAttribute('caret', position);
 }
+
 function createRange(node, chars, range) {
-    if (!range) {
-        range = document.createRange()
-        range.selectNode(node);
-        range.setStart(node, 0);
-    }
+	if (!range) {
+		range = document.createRange();
+		range.selectNode(node);
+		range.setStart(node, 0);
+	}
 
-    if (chars.count === 0) {
-        range.setEnd(node, chars.count);
-    } else if (node && chars.count >0) {
-        if (node.nodeType === Node.TEXT_NODE) {
-            if (node.textContent.length < chars.count) {
-                chars.count -= node.textContent.length;
-            } else {
-                 range.setEnd(node, chars.count);
-                 chars.count = 0;
-            }
-        } else {
-            for (var lp = 0; lp < node.childNodes.length; lp++) {
-                range = createRange(node.childNodes[lp], chars, range);
+	if (chars.count === 0) {
+		range.setEnd(node, chars.count);
+	} else if (node && chars.count > 0) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (node.textContent.length < chars.count) {
+				chars.count -= node.textContent.length;
+			} else {
+				range.setEnd(node, chars.count);
+				chars.count = 0;
+			}
+		} else {
+			for (var lp = 0; lp < node.childNodes.length; lp++) {
+				range = createRange(node.childNodes[lp], chars, range);
+				if (chars.count === 0) {
+					break;
+				}
+			}
+		}
+	}
 
-                if (chars.count === 0) {
-                   break;
-                }
-            }
-        }
-   }
-
-   return range;
+	return range;
 };
+
 
 function setCaretPosition$name(pos) {
 	// Get the editable div
@@ -1357,7 +1372,7 @@ end
 
 
 append!(comp::Component{<:Any}, childs::Vector{<:AbstractComponent}) = push!(comp[:children], childs ...)
-append!(comp::Component{<:Any}, comp::Vector{<:AbstractComponent}) = push!(comp[:children], comp)
+append!(comp::Component{<:Any}, add::AbstractComponent) = push!(comp[:children], add)
 
 """
 ```julia

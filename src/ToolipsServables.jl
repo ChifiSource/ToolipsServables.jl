@@ -286,7 +286,8 @@ File{T <: Any} <: Servable
 
 The `File` `Servable` writes a file to a `Connection`. `T` will be the file extension 
 of the file, meaning a `.html` file becomes a `File{:html}`. Getting index on a file, `File[]`, 
-will yield the field path. Using `string` on a file will read the file as a `String`.
+will yield the field path. Like all `Servables`, the `File` is conveniently bound to the `string` function.
+ Using `string` on a file will read the file as a `String`, making it incredibly easy to serve.
 ```julia
 File(`dir`**::String**)
 ```
