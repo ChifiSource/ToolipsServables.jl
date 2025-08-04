@@ -1207,7 +1207,7 @@ end
 """
 function bind end
 
-function bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :down)
+function bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :down, prevent_default::Bool = false)
     eventstr::String = join(" event.$(event)Key && " for event in eventkeys)
     cl = ClientModifier()
     f(cl)
@@ -1217,6 +1217,27 @@ function bind(f::Function, key::String, eventkeys::Symbol ...; on::Symbol = :dow
             }
             });""")
 end
+
+function bind(f::Function, cm::AbstractComponentModifier, eventkeys::Symbol ...; on::Symbol = :down, prevent_default::Bool = false)
+
+end
+
+function bind(f::Function, comp::Component{<:Any}, key::String, eventkeys::Symbol ...; on::Symbol = :down, prevent_default::Bool = false)
+    eventstr::String = join(" event.$(event)Key && " for event in eventkeys)
+    cl = ClientModifier()
+    f(cl)
+    event_n = gen_ref(8)
+    push!(comp.extras, script(cl.name, text = """function $event_n(event) {
+        if ($eventstr event.key == "$(key)") {
+        $(join(cl.changes))
+        }});"""))
+    comp["onkey$on"] = "$event_n(event);"
+end
+
+function bind(f::Function, cl::AbstractComponentModifier, comp::Component{<:Any}, key::String, eventkeys::Symbol ...; on::Symbol = :down, prevent_default::Bool = false)
+    
+end
+
 
 """
 ```julia
