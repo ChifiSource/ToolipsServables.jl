@@ -1,6 +1,12 @@
+rep_in(s::String) = replace(s, "<br>" => "\n", "</br>" => "\n", "&nbsp;" => " ", 
+"&#40;" => "(", "&#41;" => ")", "&#34;" => "\"", "&#60;" => "<", "&#62;" => ">", 
+"&#36;" => "\$", "&lt;" => "<", "&gt;" => ">", "&#64;" => "@", 
+"&#33;" => "!", "&#125;" => "}", "&#43;" => "*", "â€“" => "--", "&#61;" => "=", 
+"&#123;" => "{", "&#91;" => "[", "&#93;" => "]", "&#96;" => "`")
+
 function html_properties(s::AbstractString)
     propvec::Vector{SubString} = split(s, " ")
-    properties::Dict{Symbol, Any} = Dict{Symbol, Any}(begin
+    properties::Dict{Symbol, Any} = Dict{Symbol, String}(begin
         ppair::Vector{SubString} = split(segment, "=")
         if length(ppair) < 2
             Symbol(ppair[1]) => string(ppair[1])
@@ -17,12 +23,13 @@ htmlcomponent(s::String, args ...) -> ::Vector{<:AbstractComponent}
 
 htmlcomponent(s::String, names_only::Bool = true) -> ::Vector{Component{<:Any}}
 htmlcomponent(s::String, readonly::Vector{String}) -> ::Vector{Component{<:Any}}
+htmlcomponent(raw::String, component_name::String) -> ::Component{<:Any} # <- expiremental for 1.8
+            # (this is set to be a hyper-optimized dispatch and could be partially broken or buggy.)
 ```
 Reads components from an HTML `String`. Providing `names_only` as `false` will 
 read elements without an `id` as well. Not doing so of course speeds up parsing of 
 by excluding unneeded (unnamed in this case) elements. A `Vector{String}` of names 
 may also be provided.
----
 ```example
 comp = "<div id=\\"sample\\">hello</div>"
 
@@ -71,16 +78,12 @@ function htmlcomponent(s::String, names_only::Bool = true)
             text = s[minimum(argfinish) + 1:minimum(finisher) - 2]
         end
         push!(properties, :text => text)
-        props = Dict{Symbol, Any}(Symbol(k[1]) => k[2] for k in properties)
-        push!(comps, Component{Symbol(tag)}(name, tag, props))
+        push!(comps, Component{Symbol(tag)}(name, tag, properties))
     end
     return(comps)
 end
 
 function htmlcomponent(s::String, readonly::Vector{String})
-    if readonly[1] == "none"
-        return Vector{Servable}()
-    end
     Vector{AbstractComponent}(filter!(x -> ~(isnothing(x)), [begin
         element_sect = findfirst(" id=\"$compname\"", s)
         if ~(isnothing(element_sect))
@@ -99,18 +102,84 @@ function htmlcomponent(s::String, readonly::Vector{String})
                 name = properties["id"]
                 delete!(properties, "id")
             end
-            push!(properties, :text => replace(fulltxt, "<br>" => "\n", "<div>" => "", 
-            "&#36;" => "\$", "&#37;" => "%", "&#38;" => "&", "&nbsp;" => " ", "&#60;" => "<", "	&lt;" => "<", 
-            "&#62;" => ">", "&gt;" => ">", "<br" => "\n", "&bsol;" => "\\", "&#63;" => "?"))
-            Component{Symbol(tg)}(compname, tg, properties)
+            push!(properties, :text => rep_in(fulltxt))
+            comp = Component{Symbol(tg)}(compname)
+            comp.properties = properties
+            comp::Component
         else
         end
     end for compname in readonly]))::Vector{AbstractComponent}
 end
 
+function htmlcomponent(raw::String, component_name::String)
+    found_position = findfirst("id=\"$component_name\"", raw)
+    if isnothing(found_position)
+        @warn "could not find component $component_name !"
+        @info "raw HTML dump (does not contain $component_name): $raw"
+        throw("could not find component $component_name in page.")
+    end
+    found_position = minimum(found_position)
+    tag_begin::UnitRange{Int64} = findprev("<", raw, found_position)
+    stop_tag::Int64 = maximum(findnext(">", raw, found_position))
+    tag::Symbol = Symbol(raw[minimum(tag_begin) + 1:found_position - 2])
+    tagend = findnext("</$tag>", raw, found_position)
+    if isnothing(tagend)
+        text = ""
+    else
+        try
+            text::String = raw[stop_tag + 1:minimum(tagend) - 1]
+        catch
+            try
+                text = raw[stop_tag + 1:minimum(tagend) - 2]
+            catch
+                text = raw[stop_tag + 2:minimum(tagend) - 1]
+            end
+        end
+        tagend = nothing
+    end
+    text = rep_in(text)
+    splits::Vector{SubString} = split(raw[found_position:stop_tag], "\" ")
+    Component{tag}(component_name, text = text, [begin
+        splits = split(property, "=")
+        if length(splits) < 2
+            "" => ""
+        else
+            replace(string(splits[1]), "\"" => "", ">" => "", "<" => "") => replace(string(splits[2]), 
+            "\"" => "", ">" => "", "<" => "")
+        end
+    end for property in splits] ...)::Component{tag}
+end
+
+
 componenthtml(comps::Vector{<:AbstractComponent}) = join([string(comp) for comp in comps])
 
+"""
+```julia
+md_string(comp::Component{<:Any}) -> ::String
+```
+Produces a Markdown version of `Component` output. For instance, for a `Component{:a}` we 
+will get a markdown link.
+```julia
+md_string(comp::Component{<:Any})
+md_string(comp::Component{:h1})
+md_string(comp::Component{:h2})
+md_string(comp::Component{:h3})
+md_string(comp::Component{:h4})
+md_string(comp::Component{:h5})
+md_string(comp::Component{:h6})
+md_string(comp::Component{:hr})
+md_string(comp::Component{:li})
+md_string(comp::Component{:code})
+md_string(comp::Component{:b})
+md_string(comp::Component{:i})
+md_string(comp::Component{:a})
+md_string(comps::Vector{<:AbstractComponent})
+```
+description of method list
+- See also: `htmlcomponent`, `string(::Component{<:Any})`, `Component`
+"""
 md_string(comp::Component{<:Any}) = comp[:text]
+
 md_string(comp::Component{:h1}) = "# $(comp[:text])\n"
 md_string(comp::Component{:h2}) = "## $(comp[:text])\n"
 md_string(comp::Component{:h3}) = "### $(comp[:text])\n"
@@ -118,6 +187,7 @@ md_string(comp::Component{:h4}) = "#### $(comp[:text])\n"
 md_string(comp::Component{:h5}) = "##### $(comp[:text])\n"
 md_string(comp::Component{:h6}) = "###### $(comp[:text])\n"
 md_string(comp::Component{:hr}) = "---\n"
+md_string(comp::Component{:li}) = "- $(comp[:text])\n"
 md_string(comp::Component{:code}) = begin
     "```\n$(comp[:text])\n```"
 end
@@ -131,9 +201,45 @@ md_string(comp::Component{:a}) = begin
     end
 end
 
-function componentmd(comps::Vector{<:AbstractComponent})
+function md_string(comps::Vector{<:AbstractComponent})
     [md_string(comp) for comp in comps]
 end
+
+"""
+```julia
+interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...) -> ::String
+```
+Interpolates values and components into any file, simply provide a `\$` before the component's name, or value's name. The value's name 
+will be provided as the key-word argument key. Returns a `String`, the interpolated file.
+```html
+(example.html)
+<div>
+\$navbar
+<h1>hello world</h1>
+\$visit_n
+</div>
+```
+```julia
+using ToolipsServables
+f = File("example.html")
+pages = ("home", "about")
+navbar = div("navbar", children = [a("menu\$n", text = n) for n in pages], align = "center")
+ret = interpolate(f, navbarm visit_n = 1)
+```
+"""
+function interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...)
+    rawfile::String = read(dir, String)
+    [begin
+        rawc = string(comp)
+        rawfile = replace(rawfile, "\$$(comp.name)" => rawc)
+    end for comp in components]
+    [begin
+        rawfile = replace(rawfile, "\$$(arg[1])" => arg[2])
+    end for arg in args]
+    write!(c, rawfile)
+    string(rawfile)
+end
+
 
 """
 ```julia
@@ -145,11 +251,6 @@ The `Component{<:Any}` and key-word argument dispatch will interpolate in-line c
 as values with a `%` before them. The latter function will take a series of strings paired with functions. 
 
 The functions will be passed the `String` of a code block, the return is another `String` -- the result.
----
-```example
-
-
-```
 """
 function interpolate!(mdcomp::Component{:div}, components::Component{<:Any} ...; keyargs ...)
     replace_names = vcat([comp.name for comp in components], [string(arg[1]) for arg in keyargs])
@@ -202,40 +303,4 @@ interpolate!(comp::Component{:div}, fillfuncs::Pair{String, <:Any} ...) = begin
     end for name_func in fillfuncs]
     comp[:text] = raw
     nothing::Nothing
-end
-
-"""
-```julia
-interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...) -> ::String
-```
-Interpolates values and components into any file, simply provide a `\$` before the component's name, or value's name. The value's name 
-will be provided as the key-word argument key. Returns a `String`, the interpolated file.
----
-```html
-(example.html)
-<div>
-\$navbar
-<h1>hello world</h1>
-\$visit_n
-</div>
-```
-```julia
-using ToolipsServables
-f = File("example.html")
-pages = ("home", "about")
-navbar = div("navbar", children = [a("menu\$n", text = n) for n in pages], align = "center")
-ret = interpolate(f, navbarm visit_n = 1)
-```
-"""
-function interpolate(f::File{<:Any}, components::AbstractComponent ...; args ...)
-    rawfile::String = read(dir, String)
-    [begin
-        rawc = string(comp)
-        rawfile = replace(rawfile, "\$$(comp.name)" => rawc)
-    end for comp in components]
-    [begin
-        rawfile = replace(rawfile, "\$$(arg[1])" => arg[2])
-    end for arg in args]
-    write!(c, rawfile)
-    string(rawfile)
 end
