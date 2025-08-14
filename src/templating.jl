@@ -382,7 +382,14 @@ function base64img(name::String, raw::Any, filetype::String = "png",
     b64 = Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
     close(b64)
-    mysrc::String = String(io.data)
+    mysrc::String = String(take!(io))
+    img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
+    args ...)::Component{:img}
+end
+
+function base64img(name::String, raw::AbstractString, filetype::String = "png",
+    p::Pair{String, Any} ...; args ...)
+    mysrc = base64encode(raw)
     img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
     args ...)::Component{:img}
 end
@@ -580,8 +587,8 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
     ; selected::Integer = 5, args ...)
-    input(name, type = "number", min = range[1], max = range[2],
-    selected = selected, oninput = "this.setAttribute('selected',this.value);", p ...;
+    input(name, type = "number", min = minimum(range), max = maximum(range),
+    selected = selected, oninput = "this.setAttribute('value',this.value);", p ...;
     args ...)::Component{:input}
 end
 
