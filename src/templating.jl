@@ -399,7 +399,7 @@ show(b::Base64.Base64EncodePipe, m::MIME{<:Any}, s::AbstractString) = write(b, s
 
 """
 ```julia
-textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "", keyargs ...) -> ::Component{:div}
+textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "", keyargs ...) -> ::Component{:div}
 ```
 A premade textdiv, includes a `raw'name'` `script` which stores the raw text, without 
 spaces.
@@ -408,7 +408,7 @@ spaces.
 mytdiv = textdiv("example", text = "sample")
 ```
 """
-function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
+function textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "",
     args ...)
     raw = element("raw$name")
     style!(raw, "display" => "none")
@@ -542,7 +542,7 @@ end
 
 """
 ```julia
-textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `text` -- using this `Function` will 
@@ -552,14 +552,14 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
-    text::String = "", size::Integer = 10, args ...)
+    text::AbstractString = "", size::Integer = 10, args ...)
     input(name, type = "text", minlength = range[1], maxlength = range[2],
     value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
 ```julia
-password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, value::Integer = range[1], keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `password` -- using this `Function` will 
@@ -569,14 +569,14 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, value::Integer = range[1], args ...)
+    text::AbstractString= "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
     value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
 ```julia
-numberinput(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+numberinput(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates a number input component (`Component{:input}`). `value` will be set for 
@@ -1876,12 +1876,12 @@ end
 ```
 """
 function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
-    filetype::String = "png")
+    filetype::AbstractString = "png")
     io::IOBuffer = IOBuffer();
     b64::Base64EncodePipe = ToolipsServables.Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
     close(b64)
-    mysrc::String = String(io.data)
+    mysrc::String = String(take!(io))
     cm[name] = "src" => "data:image/$filetype;base64," * mysrc
     nothing::Nothing
 end
