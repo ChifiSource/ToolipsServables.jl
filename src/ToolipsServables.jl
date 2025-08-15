@@ -476,7 +476,7 @@ function propstring(properties::Dict{Symbol, Any})::String
 end
 
 string(comp::Component{<:Any}) = begin
-    text::String = comp.properties[:text]
+    text::AbstractString = comp.properties[:text]
     children = string(comp[:children])
     extras = string(comp[:extras])
     "$extras<$(comp.tag) id='$(comp.name)' $(propstring(comp.properties))>$children$text</$(comp.tag)>"::String

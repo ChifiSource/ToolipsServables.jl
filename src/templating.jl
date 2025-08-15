@@ -382,7 +382,14 @@ function base64img(name::String, raw::Any, filetype::String = "png",
     b64 = Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
     close(b64)
-    mysrc::String = String(io.data)
+    mysrc::String = String(take!(io))
+    img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
+    args ...)::Component{:img}
+end
+
+function base64img(name::String, raw::AbstractString, filetype::String = "png",
+    p::Pair{String, Any} ...; args ...)
+    mysrc = base64encode(raw)
     img(name, src = "'data:image/$filetype;base64," * mysrc * "'", p ...,
     args ...)::Component{:img}
 end
@@ -392,7 +399,7 @@ show(b::Base64.Base64EncodePipe, m::MIME{<:Any}, s::AbstractString) = write(b, s
 
 """
 ```julia
-textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "", keyargs ...) -> ::Component{:div}
+textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "", keyargs ...) -> ::Component{:div}
 ```
 A premade textdiv, includes a `raw'name'` `script` which stores the raw text, without 
 spaces.
@@ -401,7 +408,7 @@ spaces.
 mytdiv = textdiv("example", text = "sample")
 ```
 """
-function textdiv(name::String, p::Pair{String, <:Any} ...; text::String = "",
+function textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "",
     args ...)
     raw = element("raw$name")
     style!(raw, "display" => "none")
@@ -492,50 +499,63 @@ function createRange(node, chars, range) {
 
 
 function setCaretPosition$name(pos) {
-	// Get the editable div
 	let el = document.getElementById('$name');
 	let range = document.createRange();
 	let selection = window.getSelection();
 
-	// Helper function to find the correct text node and offset
-	function getTextNodeAtPosition(root, index) {
-		let nodeStack = [root], node, foundNode = null;
-		while (nodeStack.length > 0) {
-			node = nodeStack.pop();
-			if (node.nodeType === Node.TEXT_NODE) {
-				if (index <= node.length) {
-					foundNode = node;
-					break;
-				}
-				index -= node.length;
+	// Traverse nodes in order and simulate character counting like getCaretIndex
+	function findPosition(node, chars) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (chars.count <= node.textContent.length) {
+				range.setStart(node, chars.count);
+				chars.count = 0;
+				return true;
 			} else {
-				for (let i = node.childNodes.length - 1; i >= 0; i--) {
-					nodeStack.push(node.childNodes[i]);
+				chars.count -= node.textContent.length;
+			}
+		} else if (node.nodeType === Node.ELEMENT_NODE) {
+			if (node.tagName === "BR" || node.tagName === "DIV") {
+				if (chars.count === 0) {
+					// place caret *before* the element
+					range.setStartBefore(node);
+					return true;
+				}
+				chars.count -= 1;
+			}
+
+			for (let i = 0; i < node.childNodes.length; i++) {
+				if (findPosition(node.childNodes[i], chars)) {
+					return true;
 				}
 			}
 		}
-		return { node: foundNode, offset: index };
+		return false;
 	}
 
-	// Find the correct text node and offset
-	let { node, offset } = getTextNodeAtPosition(el, pos);
+	let chars = { count: pos };
+	findPosition(el, chars);
 
-	// If we found a valid node, set the caret position
-	if (node) {
-		range.setStart(node, offset);
-		range.collapse(true);
-		selection.removeAllRanges();
-		selection.addRange(range);
-	}
+	range.collapse(true);
+	selection.removeAllRanges();
+	selection.addRange(range);
 }""")
     push!(comp[:extras], caretpos)
-    comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
+    if haskey(comp.properties, :oninput)
+        comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
+    else
+        comp[:oninput] = "getCaretIndex$(name)(this);"
+    end
+    if haskey(comp.properties, :onclick)
+        comp[:onclick] = comp[:onclick] * "getCaretIndex$(name)(this);"
+    else
+        comp[:onclick] = "getCaretIndex$(name)(this);"
+    end
     comp::Component{:div}
 end
 
 """
 ```julia
-textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+textbox(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `text` -- using this `Function` will 
@@ -545,14 +565,14 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
-    text::String = "", size::Integer = 10, args ...)
+    text::AbstractString = "", size::Integer = 10, args ...)
     input(name, type = "text", minlength = range[1], maxlength = range[2],
     value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
 ```julia
-password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+password(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, value::Integer = range[1], keyargs ...) -> ::Component{:input}
 ```
 Creates an `input` `Component` of type `password` -- using this `Function` will 
@@ -562,14 +582,14 @@ mybox = textbox("sample", 1:10)
 ```
 """
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
-    text::String = "", size::Integer = 10, value::Integer = range[1], args ...)
+    text::AbstractString= "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
     value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
 end
 
 """
 ```julia
-numberinput(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::String = "", 
+numberinput(name::String, range::UnitRange = 1:10, args::Pair{String, <:Any} ...; text::AbstractString= "", 
 size::Integer = 10, keyargs ...) -> ::Component{:input}
 ```
 Creates a number input component (`Component{:input}`). `value` will be set for 
@@ -580,8 +600,8 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
     ; selected::Integer = 5, args ...)
-    input(name, type = "number", min = range[1], max = range[2],
-    selected = selected, oninput = "this.setAttribute('selected',this.value);", p ...;
+    input(name, type = "number", min = minimum(range), max = maximum(range),
+    selected = selected, oninput = "this.setAttribute('value',this.value);", p ...;
     args ...)::Component{:input}
 end
 
@@ -1869,12 +1889,12 @@ end
 ```
 """
 function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
-    filetype::String = "png")
+    filetype::AbstractString = "png")
     io::IOBuffer = IOBuffer();
     b64::Base64EncodePipe = ToolipsServables.Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
     close(b64)
-    mysrc::String = String(io.data)
+    mysrc::String = String(take!(io))
     cm[name] = "src" => "data:image/$filetype;base64," * mysrc
     nothing::Nothing
 end
