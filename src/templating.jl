@@ -499,44 +499,57 @@ function createRange(node, chars, range) {
 
 
 function setCaretPosition$name(pos) {
-	// Get the editable div
 	let el = document.getElementById('$name');
 	let range = document.createRange();
 	let selection = window.getSelection();
 
-	// Helper function to find the correct text node and offset
-	function getTextNodeAtPosition(root, index) {
-		let nodeStack = [root], node, foundNode = null;
-		while (nodeStack.length > 0) {
-			node = nodeStack.pop();
-			if (node.nodeType === Node.TEXT_NODE) {
-				if (index <= node.length) {
-					foundNode = node;
-					break;
-				}
-				index -= node.length;
+	// Traverse nodes in order and simulate character counting like getCaretIndex
+	function findPosition(node, chars) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			if (chars.count <= node.textContent.length) {
+				range.setStart(node, chars.count);
+				chars.count = 0;
+				return true;
 			} else {
-				for (let i = node.childNodes.length - 1; i >= 0; i--) {
-					nodeStack.push(node.childNodes[i]);
+				chars.count -= node.textContent.length;
+			}
+		} else if (node.nodeType === Node.ELEMENT_NODE) {
+			if (node.tagName === "BR" || node.tagName === "DIV") {
+				if (chars.count === 0) {
+					// place caret *before* the element
+					range.setStartBefore(node);
+					return true;
+				}
+				chars.count -= 1;
+			}
+
+			for (let i = 0; i < node.childNodes.length; i++) {
+				if (findPosition(node.childNodes[i], chars)) {
+					return true;
 				}
 			}
 		}
-		return { node: foundNode, offset: index };
+		return false;
 	}
 
-	// Find the correct text node and offset
-	let { node, offset } = getTextNodeAtPosition(el, pos);
+	let chars = { count: pos };
+	findPosition(el, chars);
 
-	// If we found a valid node, set the caret position
-	if (node) {
-		range.setStart(node, offset);
-		range.collapse(true);
-		selection.removeAllRanges();
-		selection.addRange(range);
-	}
+	range.collapse(true);
+	selection.removeAllRanges();
+	selection.addRange(range);
 }""")
     push!(comp[:extras], caretpos)
-    comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
+    if haskey(comp.properties, :oninput)
+        comp[:oninput] = comp[:oninput] * "getCaretIndex$(name)(this);"
+    else
+        comp[:oninput] = "getCaretIndex$(name)(this);"
+    end
+    if haskey(comp.properties, :onclick)
+        comp[:onclick] = comp[:onclick] * "getCaretIndex$(name)(this);"
+    else
+        comp[:onclick] = "getCaretIndex$(name)(this);"
+    end
     comp::Component{:div}
 end
 
