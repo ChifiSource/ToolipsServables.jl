@@ -408,13 +408,16 @@ spaces.
 mytdiv = textdiv("example", text = "sample")
 ```
 """
-function textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "",
+function textdiv(name::String, p::Pair{String, <:Any} ...; raw::Bool = false, text::AbstractString = "",
     args ...)
-    raw = element("raw$name")
-    style!(raw, "display" => "none")
     box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`", caret = "0",
-    oninput="'document.getElementById(\"raw$name\").innerHTML=document.getElementById(\"$name\").textContent;'", args ...)
-    push!(box[:extras], raw)
+    args ...)
+    if raw
+        raw = element("raw$name")
+        style!(raw, "display" => "none")
+        box[:oninput] = "document.getElementById(\"raw$name\").innerHTML=document.getElementById(\"$name\").textContent;"
+        push!(box[:extras], raw)
+    end
     return(box)::Component{:div}
 end
 
