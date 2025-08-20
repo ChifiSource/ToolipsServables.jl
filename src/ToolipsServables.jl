@@ -663,6 +663,6 @@ export keyframes, keyframes!, select, option, options, base64img, textdiv, textb
 export password, numberinput, rangeslider, checkbox, colorinput, cursor, keyinput
 export from, to, rgba
 export tmd, ClientModifier, on, bind, move!, remove!, set_text!, set_children!
-export append!, insert!, sleep!, set_style!, alert!, focus!, blur!, redirect!, redirect_args!
-export next!, update!, update_base64!, interpolate, interpolate!, compress!
+export sleep!, set_style!, alert!, focus!, blur!, redirect!, redirect_args!
+export next!, update!, update_base64!, interpolate, interpolate!, compress!, trigger!
 end # module ToolipsServables

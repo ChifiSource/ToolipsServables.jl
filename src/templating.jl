@@ -311,7 +311,7 @@ mysel = select("mainselect", myopts, value = "henry")
 """
 function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; value::Any = options[begin][:text], args ...)
     thedrop::Component{:select} = Component{:select}(name, p ..., value = value, args ...)
-    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
+    thedrop["oninput"], thedrop["onload"] = "'this.setAttribute(\"value\",this.value);'", "'this.setAttribute(\"value\",\"$value\");'"
     thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
 end
@@ -331,7 +331,7 @@ options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt
 
 function select(name::String,  p::Pair{String, <:Any} ...; value::Any = "", args ...)
     thedrop = Component{:select}(name, p ...; value = value, args ...)
-    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
+    thedrop["onchange"], thedrop["onload"] = "'this.setAttribute(\"value\",this.value);'", "'this.setAttribute(\"value\",\"$value\");'"
     thedrop::Component{:select}
 end
 
@@ -413,7 +413,7 @@ function textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString 
     raw = element("raw$name")
     style!(raw, "display" => "none")
     box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`", caret = "0",
-    oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;", args ...)
+    oninput="'document.getElementById(\"raw$name\").innerHTML=document.getElementById(\"$name\").textContent;'", args ...)
     push!(box[:extras], raw)
     return(box)::Component{:div}
 end
@@ -567,7 +567,7 @@ mybox = textbox("sample", 1:10)
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
     text::AbstractString = "", size::Integer = 10, args ...)
     input(name, type = "text", minlength = range[1], maxlength = range[2],
-    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
+    value = text, size = size, oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -584,7 +584,7 @@ mybox = textbox("sample", 1:10)
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
     text::AbstractString= "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
-    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
+    value = text, size = size, oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -599,9 +599,9 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 ```
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
-    ; selected::Integer = 5, args ...)
+    ; args ...)
     input(name, type = "number", min = minimum(range), max = maximum(range),
-    selected = selected, oninput = "this.setAttribute('value',this.value);", p ...;
+    oninput = "'this.setAttribute(\"value\",this.value);'", p ...;
     args ...)::Component{:input}
 end
 
@@ -620,7 +620,7 @@ end
 ```
 """
 function dateinput(name::String, args ...; value::String = "1999-11-23", keyargs ...)
-    input(name, type = "date", onchange = "this.setAttribute('value',this.value);", value = value, args ...; keyargs ...)
+    input(name, type = "date", onchange = "'this.setAttribute(\"value\",this.value);'", value = value, args ...; keyargs ...)
 end
 
 """
@@ -638,7 +638,7 @@ function rangeslider(name::String, range::UnitRange = 1:100,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)::Component{:input}
+            oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -654,7 +654,7 @@ box = checkbox("example", value = true)
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
     args ...)
     ch = input(name, p  ..., type = "checkbox", value = value,
-    oninput = "this.setAttribute('value',this.checked);", p ...; args ...)
+    oninput = "'this.setAttribute(\"value\",this.checked);'", p ...; args ...)
     if value
         ch["checked"] = value
     end
@@ -673,7 +673,7 @@ colorbox = colorinput("mycolors", value = "#ddd3de")
 """
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
-    input(name, type = "color", oninput = "this.setAttribute('value',this.value);", 
+    input(name, type = "color", oninput = "'this.setAttribute(\"value\",this.value);'", 
     value = value, p ...; args ...)::Component{:input}
 end
 
@@ -763,8 +763,8 @@ write!("", comp)
 """
 function keyinput(name::String, p::Pair{String, <:Any} ...; text = "W", args ...)
     Component{:keyinput}(name, p ..., text = text, tag = "button",
-    onkeypress = "this.innerHTML=event.key;this.setAttribute('value',event.key);",
-    onclick = "this.focus();", value = text,  args ...)
+    onkeypress = "'this.innerHTML=event.key;this.setAttribute(\"value\",event.key);'",
+    onclick = "'this.focus();'", value = text,  args ...)
 end
 
 """
@@ -787,7 +787,6 @@ function button_select(name::String, buttons::Vector{<:Servable},
      "border-width" => 0px],
     selected::Vector{Pair{String, String}} = ["background-color" => "green",
      "border-width" => 2px])
-    @warn "Deprecation warning: `button_select` will be moved to `ToolipsServables` in `0.5"
     selector_window = div(name, value = first(buttons)[:text])
     document.getElementById("xyz").style = "";
     [begin
@@ -1797,6 +1796,23 @@ end
 
 """
 ```julia
+trigger!(cm::AbstractComponentModifier, comp::Any) -> ::Nothing
+```
+Triggers a `Component` by 'clicking' on it (calls a component's `click` event)
+```julia
+```
+- See also: `UploadMap`, `Components.bind`, `fileinput`
+"""
+function trigger!(cm::AbstractComponentModifier, finp::Any)
+    if typeof(finp) <: AbstractComponent
+        finp = finp.name
+    end
+    push!(cm.changes, "document.getElementById('$(finp)').click();")
+    nothing::Nothing
+end
+
+"""
+```julia
 transition!(cl::ClientModifier, comp::Component{<:Any}, tpairs::Pair{<:Any, <:Any} ...) -> ::Nothing
 ```
 Creates a `next!` transition for each pair in `tpairs`. `tpairs` should be a list `Tuple` (provided as arguments) of
@@ -1910,7 +1926,7 @@ component's `name` (`String`), or the `Component` itself.)
 ```
 """
 function set_selection!(cm::AbstractComponentModifier, comp::Any, r::UnitRange{Int64})
-    if typeof(comp) <: Toolips.AbstractComponent
+    if typeof(comp) <: AbstractComponent
         comp = comp.name
     end
     push!(cm.changes, "document.getElementById('$comp').setSelectionRange($(r[1]), $(maximum(r)))")
@@ -1926,7 +1942,7 @@ Pauses the animation on the `Component` or `Component` `name`.
 ```
 """
 function pauseanim!(cm::AbstractComponentModifier, name::Any)
-    if typeof(name) <: Toolips.AbstractComponent
+    if typeof(name) <: AbstractComponent
         name = name.name
     end
     push!(cm.changes,
@@ -1943,7 +1959,7 @@ Pauses the animation on the `Component` or `Component` `name`.
 ```
 """
 function playanim!(cm::AbstractComponentModifier, comp::Any)
-    if typeof(comp) <: Toolips.AbstractComponent
+    if typeof(comp) <: AbstractComponent
         comp = comp.name
     end
     push!(cm.changes,
@@ -2004,7 +2020,7 @@ function scroll_to!(cm::AbstractComponentModifier, s::String,
 end
 
 function scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = true)
-    if typeof(component) <: Toolips.AbstractComponent
+    if typeof(component) <: AbstractComponent
         component = component.name
     end
     push!(cm.changes, """document.getElementById('$component').scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest"});""")
