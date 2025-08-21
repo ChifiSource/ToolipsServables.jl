@@ -311,7 +311,7 @@ mysel = select("mainselect", myopts, value = "henry")
 """
 function select(name::String, options::Vector{<:Servable}, p::Pair{String, <:Any} ...; value::Any = options[begin][:text], args ...)
     thedrop::Component{:select} = Component{:select}(name, p ..., value = value, args ...)
-    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
+    thedrop["oninput"], thedrop["onload"] = "'this.setAttribute(\"value\",this.value);'", "'this.setAttribute(\"value\",\"$value\");'"
     thedrop[:children]::Vector{AbstractComponent} = options
     thedrop::Component{:select}
 end
@@ -331,7 +331,7 @@ options(options::String ...) = Vector{AbstractComponent}([option(opt, text = opt
 
 function select(name::String,  p::Pair{String, <:Any} ...; value::Any = "", args ...)
     thedrop = Component{:select}(name, p ...; value = value, args ...)
-    thedrop["oninput"], thedrop["onload"] = "this.setAttribute('value',this.value);", "this.setAttribute('value','$value');"
+    thedrop["onchange"], thedrop["onload"] = "'this.setAttribute(\"value\",this.value);'", "'this.setAttribute(\"value\",\"$value\");'"
     thedrop::Component{:select}
 end
 
@@ -408,13 +408,16 @@ spaces.
 mytdiv = textdiv("example", text = "sample")
 ```
 """
-function textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "",
+function textdiv(name::String, p::Pair{String, <:Any} ...; raw::Bool = false, text::AbstractString = "",
     args ...)
-    raw = element("raw$name")
-    style!(raw, "display" => "none")
     box = div(name, p ..., contenteditable = true, text = text, rawtext = "`text`", caret = "0",
-    oninput="document.getElementById('raw$name').innerHTML=document.getElementById('$name').textContent;", args ...)
-    push!(box[:extras], raw)
+    args ...)
+    if raw
+        raw = element("raw$name")
+        style!(raw, "display" => "none")
+        box[:oninput] = "document.getElementById(\"raw$name\").innerHTML=document.getElementById(\"$name\").textContent;"
+        push!(box[:extras], raw)
+    end
     return(box)::Component{:div}
 end
 
@@ -567,7 +570,7 @@ mybox = textbox("sample", 1:10)
 function textbox(name::String, range::UnitRange = 1:10, p::Pair{String, <:Any} ...;
     text::AbstractString = "", size::Integer = 10, args ...)
     input(name, type = "text", minlength = range[1], maxlength = range[2],
-    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
+    value = text, size = size, oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -584,7 +587,7 @@ mybox = textbox("sample", 1:10)
 function password(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...;
     text::AbstractString= "", size::Integer = 10, value::Integer = range[1], args ...)
     input(name, type = "password", minlength = range[1], maxlength = range[2],
-    value = text, size = size, oninput = "this.setAttribute('value',this.value);", p ...; args ...)::Component{:input}
+    value = text, size = size, oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -599,9 +602,9 @@ num_inp = numberinput("sample", range = 30:40, value = 35)
 ```
 """
 function numberinput(name::String, range::UnitRange = 1:10, p::Pair{String, Any} ...
-    ; selected::Integer = 5, args ...)
+    ; args ...)
     input(name, type = "number", min = minimum(range), max = maximum(range),
-    selected = selected, oninput = "this.setAttribute('value',this.value);", p ...;
+    oninput = "'this.setAttribute(\"value\",this.value);'", p ...;
     args ...)::Component{:input}
 end
 
@@ -620,7 +623,7 @@ end
 ```
 """
 function dateinput(name::String, args ...; value::String = "1999-11-23", keyargs ...)
-    input(name, type = "date", onchange = "this.setAttribute('value',this.value);", value = value, args ...; keyargs ...)
+    input(name, type = "date", onchange = "'this.setAttribute(\"value\",this.value);'", value = value, args ...; keyargs ...)
 end
 
 """
@@ -638,7 +641,7 @@ function rangeslider(name::String, range::UnitRange = 1:100,
     args ...)
     input(name, type = "range", min = string(minimum(range)),
      max = string(maximum(range)), value = value, step = step,
-            oninput = "'this.setAttribute('value',this.value);'", p ...; args ...)::Component{:input}
+            oninput = "'this.setAttribute(\"value\",this.value);'", p ...; args ...)::Component{:input}
 end
 
 """
@@ -654,7 +657,7 @@ box = checkbox("example", value = true)
 function checkbox(name::String, p::Pair{String, <:Any} ...; value::Bool = false,
     args ...)
     ch = input(name, p  ..., type = "checkbox", value = value,
-    oninput = "this.setAttribute('value',this.checked);", p ...; args ...)
+    oninput = "'this.setAttribute(\"value\",this.checked);'", p ...; args ...)
     if value
         ch["checked"] = value
     end
@@ -673,7 +676,7 @@ colorbox = colorinput("mycolors", value = "#ddd3de")
 """
 function colorinput(name::String, p::Pair{String, <:Any} ...;
     value::String = "#ffffff", args ...)
-    input(name, type = "color", oninput = "this.setAttribute('value',this.value);", 
+    input(name, type = "color", oninput = "'this.setAttribute(\"value\",this.value);'", 
     value = value, p ...; args ...)::Component{:input}
 end
 
@@ -763,8 +766,8 @@ write!("", comp)
 """
 function keyinput(name::String, p::Pair{String, <:Any} ...; text = "W", args ...)
     Component{:keyinput}(name, p ..., text = text, tag = "button",
-    onkeypress = "this.innerHTML=event.key;this.setAttribute('value',event.key);",
-    onclick = "this.focus();", value = text,  args ...)
+    onkeypress = "'this.innerHTML=event.key;this.setAttribute(\"value\",event.key);'",
+    onclick = "'this.focus();'", value = text,  args ...)
 end
 
 """
@@ -787,7 +790,6 @@ function button_select(name::String, buttons::Vector{<:Servable},
      "border-width" => 0px],
     selected::Vector{Pair{String, String}} = ["background-color" => "green",
      "border-width" => 2px])
-    @warn "Deprecation warning: `button_select` will be moved to `ToolipsServables` in `0.5"
     selector_window = div(name, value = first(buttons)[:text])
     document.getElementById("xyz").style = "";
     [begin
@@ -1390,7 +1392,8 @@ end
 ```julia
 set_children!(cm::AbstractComponentModifier, s::Any, v::Vector{<:Servable}) -> ::Nothing
 ```
-`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v` in a callback.
+The callback version of `set_children!` used on a `ClientModifier` and other `ComponentModifier`
+ types.
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1438,7 +1441,6 @@ function append!(cm::AbstractComponentModifier, name::Any, child::AbstractCompon
     push!(cm.changes, "document.getElementById('$name').appendChild(document.createRange().createContextualFragment(`$txt`));")
     nothing::Nothing
 end
-
 
 append!(comp::Component{<:Any}, childs::Vector{<:AbstractComponent}) = push!(comp[:children], childs ...)
 append!(comp::Component{<:Any}, add::AbstractComponent) = push!(comp[:children], add)
@@ -1533,7 +1535,7 @@ end
 """
 ```julia
 # component-mutating:
-
+set_style!(component::Component{<:Any}, pairs::Pair{String, <: Any} ...)
 # client-side callbacks:
 set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
@@ -1577,6 +1579,7 @@ end
 """
 ```julia
 alert!(cm::AbstractComponentModifier, s::String) -> ::Nothing
+alert!(cm::AbstractComponentModifier, prop::Component{:property})
 ```
 Alerts the client with the `String` `s` in a callback. This will present a small 
 dialog popup on the client's system with `s` as the message.
@@ -1675,7 +1678,7 @@ redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; 
 
 # redirect a client with arguments from a `ClientModifier`.
 redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
-delay::Int64 0, new_tab::Bool = false) ->::Nothing
+    delay::Int64 0, new_tab::Bool = false) ->::Nothing
 ```
 ```example
 using Toolips
@@ -1736,6 +1739,7 @@ end
 """
 ```julia
 next!(f::Function, cl::AbstractComponentModifier, comp::Any) -> ::Nothing
+next!(f::Function, cm::AbstractComponentModifier, time::Integer = 1000)
 ```
 `next!` creates a sequence of events to occur after a component's transition as ended. `comp` can be 
 the component's `name` or the `Component` itself. Note that the `Component` has to be in a transition to 
@@ -1793,6 +1797,23 @@ next_transition!(cl::ClientModifier, name::String, gen::AbstractVector, e::Int64
     next!(cl, name) do cl2
         next_transition!(cl2, name, gen, e + 1)
     end
+end
+
+"""
+```julia
+trigger!(cm::AbstractComponentModifier, comp::Any) -> ::Nothing
+```
+Triggers a `Component` by 'clicking' on it (calls a component's `click` event)
+```julia
+```
+- See also: `transition!`, `next!`, `set_children!`, `AbstractComponentModifier`
+"""
+function trigger!(cm::AbstractComponentModifier, finp::Any)
+    if typeof(finp) <: AbstractComponent
+        finp = finp.name
+    end
+    push!(cm.changes, "document.getElementById('$(finp)').click();")
+    nothing::Nothing
 end
 
 """
@@ -1888,8 +1909,7 @@ export home
 end
 ```
 """
-function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
-    filetype::AbstractString = "png")
+function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any, filetype::AbstractString = "png")
     io::IOBuffer = IOBuffer();
     b64::Base64EncodePipe = ToolipsServables.Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
@@ -1910,7 +1930,7 @@ component's `name` (`String`), or the `Component` itself.)
 ```
 """
 function set_selection!(cm::AbstractComponentModifier, comp::Any, r::UnitRange{Int64})
-    if typeof(comp) <: Toolips.AbstractComponent
+    if typeof(comp) <: AbstractComponent
         comp = comp.name
     end
     push!(cm.changes, "document.getElementById('$comp').setSelectionRange($(r[1]), $(maximum(r)))")
@@ -1926,11 +1946,11 @@ Pauses the animation on the `Component` or `Component` `name`.
 ```
 """
 function pauseanim!(cm::AbstractComponentModifier, name::Any)
-    if typeof(name) <: Toolips.AbstractComponent
+    if typeof(name) <: AbstractComponent
         name = name.name
     end
     push!(cm.changes,
-    "document.getElementById('$name').style.animationPlayState = 'paused';")
+        "document.getElementById('$name').style.animationPlayState = 'paused';")
 end
 
 """
@@ -1943,7 +1963,7 @@ Pauses the animation on the `Component` or `Component` `name`.
 ```
 """
 function playanim!(cm::AbstractComponentModifier, comp::Any)
-    if typeof(comp) <: Toolips.AbstractComponent
+    if typeof(comp) <: AbstractComponent
         comp = comp.name
     end
     push!(cm.changes,
@@ -1990,8 +2010,13 @@ scroll_to!(cm::AbstractComponentModifier, xy::Tuple{Int64, Int64})
 scroll_to!(cm::AbstractComponentModifier, s::String,
     xy::Tuple{Int64, Int64})
 # scroll to a `Component` by `Component.name` or providing the `Component`:
-scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = true)
+scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = false, align::Symbol = :start)
 ```
+For the latter, there are four different alignment options:
+- `:start`
+- `:center`
+- `:end`
+- and `:nearest`
 """
 function scroll_to!(cm::AbstractComponentModifier, xy::Tuple{Int64, Int64})
     push!(cm.changes, """window.scrollTo($(xy[1]), $(xy[2]));""")
@@ -2003,11 +2028,14 @@ function scroll_to!(cm::AbstractComponentModifier, s::String,
     """document.getElementById('$s').scrollTo($(xy[1]), $(xy[2]));""")
 end
 
-function scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = true)
-    if typeof(component) <: Toolips.AbstractComponent
+function scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = false, align::Symbol = :start)
+    if typeof(component) <: AbstractComponent
         component = component.name
     end
-    push!(cm.changes, """document.getElementById('$component').scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest"});""")
+    if align_top == true
+        align = :start
+    end
+    push!(cm.changes, """document.getElementById('$component').scrollIntoView({ behavior: "smooth", block: "$align", inline: "nearest"});""")
 end
 
 """
