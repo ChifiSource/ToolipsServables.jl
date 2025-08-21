@@ -1392,7 +1392,8 @@ end
 ```julia
 set_children!(cm::AbstractComponentModifier, s::Any, v::Vector{<:Servable}) -> ::Nothing
 ```
-`set_children!` will set the children of `s`, a `Component` or `Component`'s `name`, to `v` in a callback.
+The callback version of `set_children!` used on a `ClientModifier` and other `ComponentModifier`
+ types.
 ```example
 using Toolips
 home = route("/") do c::Connection
@@ -1440,7 +1441,6 @@ function append!(cm::AbstractComponentModifier, name::Any, child::AbstractCompon
     push!(cm.changes, "document.getElementById('$name').appendChild(document.createRange().createContextualFragment(`$txt`));")
     nothing::Nothing
 end
-
 
 append!(comp::Component{<:Any}, childs::Vector{<:AbstractComponent}) = push!(comp[:children], childs ...)
 append!(comp::Component{<:Any}, add::AbstractComponent) = push!(comp[:children], add)
@@ -1535,7 +1535,7 @@ end
 """
 ```julia
 # component-mutating:
-
+set_style!(component::Component{<:Any}, pairs::Pair{String, <: Any} ...)
 # client-side callbacks:
 set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, <:Any} ...) -> ::Nothing
 ```
@@ -1579,6 +1579,7 @@ end
 """
 ```julia
 alert!(cm::AbstractComponentModifier, s::String) -> ::Nothing
+alert!(cm::AbstractComponentModifier, prop::Component{:property})
 ```
 Alerts the client with the `String` `s` in a callback. This will present a small 
 dialog popup on the client's system with `s` as the message.
@@ -1677,7 +1678,7 @@ redirect!(cm::AbstractComponentModifier, url::AbstractString, delay::Int64 = 0; 
 
 # redirect a client with arguments from a `ClientModifier`.
 redirect!(cm::AbstractComponentModifier, url::AbstractString, with::Pair{Symbol, Component{:property}} ...; 
-delay::Int64 0, new_tab::Bool = false) ->::Nothing
+    delay::Int64 0, new_tab::Bool = false) ->::Nothing
 ```
 ```example
 using Toolips
@@ -1738,6 +1739,7 @@ end
 """
 ```julia
 next!(f::Function, cl::AbstractComponentModifier, comp::Any) -> ::Nothing
+next!(f::Function, cm::AbstractComponentModifier, time::Integer = 1000)
 ```
 `next!` creates a sequence of events to occur after a component's transition as ended. `comp` can be 
 the component's `name` or the `Component` itself. Note that the `Component` has to be in a transition to 
@@ -1804,7 +1806,7 @@ trigger!(cm::AbstractComponentModifier, comp::Any) -> ::Nothing
 Triggers a `Component` by 'clicking' on it (calls a component's `click` event)
 ```julia
 ```
-- See also: `UploadMap`, `Components.bind`, `fileinput`
+- See also: `transition!`, `next!`, `set_children!`, `AbstractComponentModifier`
 """
 function trigger!(cm::AbstractComponentModifier, finp::Any)
     if typeof(finp) <: AbstractComponent
@@ -1907,8 +1909,7 @@ export home
 end
 ```
 """
-function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any,
-    filetype::AbstractString = "png")
+function update_base64!(cm::AbstractComponentModifier, name::Any, raw::Any, filetype::AbstractString = "png")
     io::IOBuffer = IOBuffer();
     b64::Base64EncodePipe = ToolipsServables.Base64.Base64EncodePipe(io)
     show(b64, "image/$filetype", raw)
@@ -1949,7 +1950,7 @@ function pauseanim!(cm::AbstractComponentModifier, name::Any)
         name = name.name
     end
     push!(cm.changes,
-    "document.getElementById('$name').style.animationPlayState = 'paused';")
+        "document.getElementById('$name').style.animationPlayState = 'paused';")
 end
 
 """
@@ -2009,8 +2010,13 @@ scroll_to!(cm::AbstractComponentModifier, xy::Tuple{Int64, Int64})
 scroll_to!(cm::AbstractComponentModifier, s::String,
     xy::Tuple{Int64, Int64})
 # scroll to a `Component` by `Component.name` or providing the `Component`:
-scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = true)
+scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = false, align::Symbol = :start)
 ```
+For the latter, there are four different alignment options:
+- `:start`
+- `:center`
+- `:end`
+- and `:nearest`
 """
 function scroll_to!(cm::AbstractComponentModifier, xy::Tuple{Int64, Int64})
     push!(cm.changes, """window.scrollTo($(xy[1]), $(xy[2]));""")
@@ -2022,11 +2028,14 @@ function scroll_to!(cm::AbstractComponentModifier, s::String,
     """document.getElementById('$s').scrollTo($(xy[1]), $(xy[2]));""")
 end
 
-function scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = true)
+function scroll_to!(cm::AbstractComponentModifier, component::Any; align_top::Bool = false, align::Symbol = :start)
     if typeof(component) <: AbstractComponent
         component = component.name
     end
-    push!(cm.changes, """document.getElementById('$component').scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest"});""")
+    if align_top == true
+        align = :start
+    end
+    push!(cm.changes, """document.getElementById('$component').scrollIntoView({ behavior: "smooth", block: "$align", inline: "nearest"});""")
 end
 
 """

@@ -216,8 +216,7 @@ abstract type Servable end
 sampler::String = "abcdefghijklmnopqrstuvwxyz"
 
 function gen_ref(n::Int64 = 8) 
-    samps = (rand(1:length(sampler)) for i in 1:n)
-    join(sampler[samp] for samp in samps)
+    join((sampler[rand(1:length(sampler))] for i in 1:n))
 end
 
 const Servables{T} = Vector{T} where {T <: Servable}
@@ -230,8 +229,10 @@ string(s::Servables) = join(string(serv) for serv in s)
 ```julia
 write!(io, args ...) -> _
 ```
-The `write` `Function` is used to `write!` `Servables` to 
-a `<: IO` or a `String`.
+The `write!` `Function` is used to *write* `Servables` to 
+a `<: IO` or a `String`. Note that this is a mutating write, it is intended for a 
+`Stream` and is intended to mutate the target. (This also helps to distinguish it from 
+`Base.write` as a `toolips` *extensible* function.)
 ```julia
 write!(io::IO, servables::Servable ...) -> ::Nothing
 write!(io::String, servables::Servable ...) -> ::String
