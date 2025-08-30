@@ -1325,6 +1325,19 @@ function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
   nothing::Nothing
 end
 
+function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}, i::Int64)
+    firstname = p[1]
+    secondname = p[2]
+    if typeof(firstname) <: AbstractComponent
+        firstname = firstname.name
+    end
+    if typeof(secondname) <: AbstractComponent
+        secondname = secondname.name
+    end
+    push!(cm.changes, "document.getElementById('$secondname').insertBefore(document.getElementById('$firstname'), document.getElementById('$secondname').children[$(i - 1)]);")
+    nothing::Nothing
+end
+
 function set_textdiv_cursor!(cm::AbstractComponentModifier, name::Any, pos::Any)
     if typeof(name) <: AbstractComponent
         name = name.name
