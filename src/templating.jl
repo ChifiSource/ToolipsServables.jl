@@ -1,5 +1,3 @@
-
-
 """
 The following is a *comprehensive list of all component elements. Elements are called 
 with the first positional argument of a `String` and then infinite `Pair{String, <:Any}` and 
@@ -83,17 +81,46 @@ for example, `select` and `options` both have alternate methods that make them f
 - `textbox`
 - `password`
 - `numberinput`
+- `dateinput`
 - `rangeslider`
 - `checkbox`
 - `colorinput`
 - `cursor`
 - `context_menu!(menu::Component{<:Any})`
 - `keyinput`
+- `button_select`
 
 To make a `Component` that isn't on this list, simply provide `Component{:tag}` in place of the constant names:
 ```julia
 # we want a <circle> element:
 new_circ = Component{:circle}()
+```
+Here is a basic `Component` composition:
+```julia
+using ToolipsServables
+
+rise_up = keyframes("risefade")
+keyframes!(rise_up, 0percent, "opacity" => 0percent, "transform" => translateY(2percent))
+keyframes!(rise_up, 100percent, "opacity" => 100percent, "transform" => translateY(0percent))
+
+button_class = style("button.mainbuttons", "background-color" => "white", "border" => "2px solid black", 
+    "font-size" => 14pt, "font-weight" => "bold")
+
+buttons = [begin
+    mainb = button("opt" * option, text = option, class = "mainbuttons")
+    on(mainb, "click") do cl::ClientModifier
+        cl["main"] = "align" => option
+    end
+    mainb
+end for option in ("left", "center", "right")]
+
+mainbox = div("main", children = buttons, align = "left")
+
+style!(mainbox, "padding" => 5percent, "animation-name" => "risefade", "animation-duration" => 500ms)
+
+open("myfile.html", "w") do o::IOStream
+    write(o, body(children = [rise_up, button_class, mainbox]))
+end
 ```
 """
 function templating end
@@ -103,7 +130,8 @@ function templating end
 DOCTYPE() -> ::String
 ```
 In cases which utilize minimal HTML, it might be necessary to write the document 
-type to the page. In this case, simply write the return of this `Function` to your `IO`.
+type to the page. In this case, simply write the return of this `Function` to your `IO`. In most cases, 
+you will not need to write this.
 ```example
 io = IOBuffer()
 
@@ -401,9 +429,9 @@ show(b::Base64.Base64EncodePipe, m::MIME{<:Any}, s::AbstractString) = write(b, s
 ```julia
 textdiv(name::String, p::Pair{String, <:Any} ...; text::AbstractString = "", keyargs ...) -> ::Component{:div}
 ```
-A premade textdiv, includes a `raw'name'` `script` which stores the raw text, without 
-spaces.
----
+A premade text-div, amongst the most capable of inputs in HTML though it does present some challenges. *If you just want regular text,* perhaps use 
+a text input instead. The `textdiv` will make things harder with no real benefit in those cases. This is better suited to, for example, syntax highlighting 
+or other cases where elements lie inside editable text.
 ```example
 mytdiv = textdiv("example", text = "sample")
 ```
@@ -427,7 +455,8 @@ textdiv_caret_tracker!(comp::Component{:div}) ->
 ```
 Adds a caret tracking script to a `Component{:div}`, likely a `textdiv` given we are trying to track 
 the text cursor. This function will add a new attribute, `caret`, to a `textdiv` alongside a script 
-that tracks the updates its position. This way, we can access the `caret` through a `ComponentModifier`.
+that tracks the updates its position. This way, we can access the `caret` through a `ComponentModifier`. Also 
+take note of `set_textdiv_cursor!`
 ```example
 mytdiv = textdiv("example", text = "sample")
 text_div_caret_tracker!(mytdiv)
@@ -823,9 +852,6 @@ end
 
 (:)(sheet::Component{:sheet}, s::String, vec::Vector{Pair{String, String}}) = push!(sheet[:children], Style(s, vec ...))
 
-mutable struct WebMeasure{format} end
-
-*(i::Any, p::WebMeasure{<:Any}) = "$(i)$(typeof(p).parameters[1])"
 
 """
 ###### measures
@@ -836,7 +862,8 @@ units are meant to be provided after a number.
 ```example
 mybutton = button("example-button", text = "press me!")
 
-style!(mybutton, "font-size" => 22pt, "border-radius" => 5px, "transition" => 800ms)
+style!(mybutton, "font-size" => 22pt, "border-radius" => 5px, "transition" => 800ms, 
+    "transform" => scale(10percent, 5percent))
 ```
 Here is a comprehensive list of measures for each application:
 ```julia
@@ -873,6 +900,10 @@ translate
 scale
 ```
 """
+mutable struct WebMeasure{format} end
+
+*(i::Any, p::WebMeasure{<:Any}) = "$(i)$(typeof(p).parameters[1])"
+
 const measures = WebMeasure
 # size
 const px = WebMeasure{:px}()
@@ -906,6 +937,8 @@ translateX(a::Any) = "translateX($a)"
 translateY(a::Any) = "translateY($a)"
 scale(a::Any) = "scale($a)"
 skew(a::Any) = "skew($a)"
+scale(a::Any, v::Any) = "scale($a, $v)"
+skew(a::Any, v::Any) = "skew($a, $v)"
 
 """
 ```julia
@@ -1291,7 +1324,10 @@ end
 
 """
 ```julia
+# move into parent:
 move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}) -> ::Nothing
+# move into parent at indicated position:
+move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}, i::Int64) -> ::Nothing
 ```
 `move!` is a `ComponentModifier` `Function` that will move a `Component` into 
 another `Component`. The values of `p` -- as is the case in most `ComponentModifier` functions which take 
@@ -1325,11 +1361,34 @@ function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any})
   nothing::Nothing
 end
 
+function move!(cm::AbstractComponentModifier, p::Pair{<:Any, <:Any}, i::Int64)
+    firstname = p[1]
+    secondname = p[2]
+    if typeof(firstname) <: AbstractComponent
+        firstname = firstname.name
+    end
+    if typeof(secondname) <: AbstractComponent
+        secondname = secondname.name
+    end
+    push!(cm.changes, "document.getElementById('$secondname').insertBefore(document.getElementById('$firstname'), document.getElementById('$secondname').children[$(i - 1)]);")
+    nothing::Nothing
+end
+
+"""
+```julia
+set_textdiv_cursor!(cm::AbstractComponentModifier, name::Any, pos::Any) -> ::Nothing
+```
+Sets the caret position of a textdiv cursor in a `ComponentModifier` callback. The caret may be obtained through a `ComponentModifier` 
+by indexing `caret` on a given `textdiv`. Make sure to run that `textdiv` through `textdiv_caret_tracker!`, otherwise 
+the `caret` property will not exist.
+- See also: `textdiv_caret_tracker!`, `Component`, `templating`
+"""
 function set_textdiv_cursor!(cm::AbstractComponentModifier, name::Any, pos::Any)
     if typeof(name) <: AbstractComponent
         name = name.name
     end
     push!(cm.changes, "setCaretPosition$(name)($pos);")
+    nothing::Nothing
 end
 
 """
@@ -1572,7 +1631,7 @@ function set_style!(cm::AbstractComponentModifier, name::Any, sty::Pair{String, 
     if typeof(name) <: AbstractComponent
         name = name.name
     end
-    push!(cm.changes, "document.getElementById('$name').style = '$sstring'")
+    push!(cm.changes, "document.getElementById('$name').style = '$sstring';")
     nothing::Nothing
 end
 
@@ -1876,7 +1935,7 @@ function update!(cm::AbstractComponentModifier, ppane::Any, plot::Any)
     end
     io::IOBuffer = IOBuffer()
     show(io, "text/html", plot)
-    data::String = String(io.data)
+    data::String = String(take!(io))
     data = replace(data,
      """<?xml version=\"1.0\" encoding=\"utf-8\"?>\n""" => "")
     set_text!(cm, ppane, data)::Nothing
@@ -1951,6 +2010,7 @@ function pauseanim!(cm::AbstractComponentModifier, name::Any)
     end
     push!(cm.changes,
         "document.getElementById('$name').style.animationPlayState = 'paused';")
+    nothing::Nothing
 end
 
 """
@@ -1968,6 +2028,7 @@ function playanim!(cm::AbstractComponentModifier, comp::Any)
     end
     push!(cm.changes,
     "document.getElementById('$comp').style.animationPlayState = 'running';")
+    nothing::Nothing
 end
 
 """
@@ -1984,7 +2045,7 @@ function free_redirects!(cm::AbstractComponentModifier)
     push!(cm.changes, """window.onbeforeunload = null;""")
 end
 
-"""
+"""`textdiv_caret_tracker!`
 ```julia
 confirm_redirects!(cm::AbstractComponentModifier) -> ::Nothing
 ```
