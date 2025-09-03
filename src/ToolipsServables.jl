@@ -55,145 +55,167 @@ end
 # <:IO, <:Toolips.AbstractConnection, `String`
 @info string(mainbod)
 result = write!("", post_style, fadein, mainbod)
-```
-###### servable base
-- abstract type `Servable` end
-- `File` <: `Servable`
-- `AbstractComponent` <: `Servable`
-- `Component{T <: Any}` <: `AbstractComponent`
-- abstract type `StyleComponent` <: `AbstractComponent`
-- `Servables` (type alias for `Vector{<:Servable}`)
-- `write!(::IO, ::Servable)`
-- `write!(::String, ::Servable)`
-- `copy(c::Component{<:Any})`
-- `Style` <: `StyleComponentComponent`
-- abstract type `AbstractAnimation` <: `StyleComponent`
-- `KeyFrames` <: `AbstractAnimation`
+```julia
+# servable base
+abstract type `Servable` end
+`File` <: `Servable`
+`AbstractComponent` <: `Servable`
+`Component{T <: Any}` <: `AbstractComponent`
+abstract type `StyleComponent` <: `AbstractComponent`
+`Servables` (type alias for `Vector{<:Servable}`)
+`write!(::IO, ::Servable)`
+`write!(::String, ::Servable)`
+`copy(c::Component{<:Any})`
+`Style` <: `StyleComponentComponent`
+abstract type `AbstractAnimation` <: `StyleComponent`
+`KeyFrames` <: `AbstractAnimation`
 
-###### templating
-use `?(templating)` to learn more about HTML templating with Toolips.
-  - `img`
-  - `link`
-  - `meta`
-  - `input`
-  - `a`
-  - `p`
-  - `ul`
-  - `li`
-  - `br`
-  - `i`
-  - `title`
-  - `span`
-  - `iframe`
-  - `svg`
-  - `h1`
-  - `h2`
-  - `h3`
-  - `h4`
-  - `h5`
-  - `h6`
-  - `h`
-  - `element`
-  - `label`
-  - `script`
-  - `nav`
-  - `button`
-  - `form`
-  - `section`
-  - `body`
-  - `header`
-  - `footer`
-  - `b`
-  - `source`
-  - `audio`
-  - `video`
-  - `table`
-  - `tr`
-  - `th`
-  - `td`
-  - `tmd`
-  - `base64img`
-- `keyframes`
-- `style!`
-- `push!`
-- `textdiv`
-- `textbox`
-- `password`
-- `numberinput`
-- `rangeslider`
-- `option`
-- `options`
-- `select`
-- `checkbox`
-- `colorinput`
-- `progress`
-- `cursor`
-- `keyinput`
+###### templating components
+use `?(templating)` to learn more about HTML templating with `ToolipsServables`.
+ `img`
+ `link`
+ `meta`
+ `input`
+ `a`
+ `p`
+ `ul`
+ `li`
+ `br`
+ `i`
+ `title`
+ `span`
+ `iframe`
+ `svg`
+ `h1`
+ `h2`
+ `h3`
+ `h4`
+ `h5`
+ `h6`
+ `h`
+ `element`
+ `label`
+ `script`
+ `nav`
+ `button`
+ `form`
+ `section`
+ `body`
+ `header`
+ `footer`
+ `b`
+ `source`
+ `audio`
+ `video`
+ `table`
+ `tr`
+ `th`
+ `td`
+ `tmd`
+ `base64img`
+`keyframes`
+`style!`
+`push!`
+`textdiv`
+`textbox`
+`password`
+`numberinput`
+`rangeslider`
+`option`
+`options`
+`select`
+`checkbox`
+`colorinput`
+`progress`
+`cursor`
+`keyinput`
 
-- `context_menu!`
-- `textdiv_caret_tracker!`
-- `set_children!`
-- `set_text!`
-- `scroll_by!`
-- `scroll_to!`
-- `confirm_redirects!`
-- `free_redirects!`
-- `playanim!`
-- `pauseanim!`
-- `set_selection!`
-- `update_base64!`
-- `update!`
-- `transition!`
-- `next_transition!`
-- `next!`
-- `redirect!`
-- `blur!`
-- `focus!`
-- `alert!`
-- `set_style!`
-- `sleep!`
-- `insert!`
-- `append!`
-- `remove!`
-- `move!`
+# component mutation
+`set_children!`
+`style!`
+`set_text!`
+`push!`
+`textdiv_caret_tracker!`
+`context_menu!`
 
-- `on`
-- `bind`
+# callbacks
+`on`
+`bind`
+`ClientModifier`
+`funccl`
 
-- `WebMeasure{format <: Any}`
-- `measures` (`?measures`)
-  - `px`
-  - `pt`
-  - `inch`
-  - `pc`
-  - `mm`
-  - `cm`
-  - `percent`
-  - `per`
-  - `em`
-  - `seconds`
-  - `s`
-  - `ms`
-  - `deg`
-  - `turn`
-  - `rgba(r::Number, g::Number, b::Number, a::Float64)`
-  - `from`
-  - `to`
-  - `translateX(s::String)`
-  - `translateY(s::String)`
-  - `rotate(s::String)`
-  - `matrix(n::Int64 ...)`
-  - `translate(x::String, y::String)`
-  - `skew(one::String, two::String)`
-  - `scale(n::Any)`
-  - `scale(n::Any, n2::Any)`
-- **io**
-  - `htmlcomponent`
-  - `componenthtml`
-  - `md_string`
-  - `componentmd`
-  - `interpolate`
-  - `interpolate!`
+# callback functions
+`set_children!`
+`set_textdiv_cursor!`
+`style!`
+`set_text!`
+`scroll_by!`
+`scroll_to!`
+`confirm_redirects!`
+`free_redirects!`
+`playanim!`
+`pauseanim!`
+`set_selection!`
+`update_base64!`
+`update!`
+`transition!`
+`next_transition!`
+`next!`
+`redirect!`
+`blur!`
+`focus!`
+`alert!`
+`set_style!`
+`sleep!`
+`insert!`
+`append!`
+`remove!`
+`move!`
+`append!`
+`set_style!`
+`next!`
+`next_transition!`
+`trigger!`
+`transition!`
+`scroll_to!`
+`scroll_by!`
+
+# web measuers
+`WebMeasure{format <: Any}`
+`measures` (`?measures`)
+ `px`
+ `pt`
+ `inch`
+ `pc`
+ `mm`
+ `cm`
+ `percent`
+ `per`
+ `em`
+ `seconds`
+ `s`
+ `ms`
+ `deg`
+ `turn`
+ `rgba(r::Number, g::Number, b::Number, a::Float64)`
+ `from`
+ `to`
+ `translateX(s::String)`
+ `translateY(s::String)`
+ `rotate(s::String)`
+ `matrix(n::Int64 ...)`
+ `translate(x::String, y::String)`
+ `skew(one::String, two::String)`
+ `scale(n::Any)`
+ `scale(n::Any, n2::Any)`
+
+# io
+ `htmlcomponent`
+ `componenthtml`
+ `md_string`
+ `componentmd`
+ `interpolate`
+ `interpolate!`
 """
 module ToolipsServables
 import Base: div, in, getindex, setindex!, delete!, push!, string, (:), show, display, *, copy, insert!, append!
@@ -204,18 +226,44 @@ using Base64
 ```julia
 abstract type Servable <: Any
 ```
-A `Servable` is a type intended to be written to IO that is served to a server. ToolipsServables 
-comes with the `Component`, the `File`, `KeyFrames`, and `Style` servables.
+A `Servable` is a type intended to be written to an IO as HTML. ToolipsServables 
+comes with the `Component`, the `File`, `KeyFrames`, and `Style` servables. These will be written as elements; 
+for example, a `Style` or `KeyFrames` will be written as a `Style`.
 - All servables have a `name`.
 - All servables are dispatched to `string`.
-- Vectors of Servables can be indexed by a `String`, which will index the servables by `name`
+- Vectors of Servables can be indexed by a `String`, which will index the servables by `name`.
+- All servables have a binding to `write!(::IO, ::Servable)`.
 - See also: `Servables`, `File`, `Component`, `templating`
 """
 abstract type Servable end
 
 sampler::String = "abcdefghijklmnopqrstuvwxyz"
 
-function gen_ref(n::Int64 = 8) 
+"""
+```julia
+gen_ref(n::Int64 = 8) -> ::String
+```
+Generates a random reference key of length `n`. This random reference only contains 
+non-numerical and lowercase characters.
+```julia
+using Toolips
+using ToolipsServables
+
+home = route("/") do c
+    ip = get_ip(c)
+    if haskey(c[:keys], ip)
+        write!(c, "your code is " * c[:keys][ip])
+        return
+    end
+    key = gen_ref(8)
+    push!(c[:keys], get_ip(c) => key)
+    write!(c, "your code is " * key)
+end
+
+```
+- See also: `funccl`, `ToolipsServables`, `write!`
+"""
+function gen_ref(n::Int64 = 8)::String
     join((sampler[rand(1:length(sampler))] for i in 1:n))
 end
 
@@ -293,6 +341,7 @@ will yield the field path. Like all `Servables`, the `File` is conveniently boun
 File(`dir`**::String**)
 ```
 ```example
+using ToolipsServables
 # write! candidate
 io = IOBuffer()
 
@@ -300,6 +349,11 @@ io = IOBuffer()
 myf::File{:jl} = File("myfiles/example.jl")
 # writing
 write!(io, myf)
+
+# interpolate with components
+newa = a("this-name-is-in-the-file-after-a-dollar-sign")
+
+write(io, interpolate(myf, newa, x = 5))
 ```
 """
 mutable struct File{T <: Any} <: Servable
@@ -330,23 +384,31 @@ end
 ```julia
 abstract type AbstractComponent <: Servable
 ```
-Components are html elements or CSS classes. 
+An `AbstractComponent` is a representation 
 - `name`**::String**
 - `string`**::AbstractComponent**
 - `properties`**::Dict{Symbol, <:Any}**
+
+The following dispatches are *handy* and important to take note of:
+```julia
+string(s::Vector{<:AbstractComponent})
+in(name::String, v::Vector{<:AbstractComponent})
+getindex(vec::Vector{<:AbstractComponent}, name::AbstractString)
+delete!(vec::Vector{<:AbstractComponent}, name::AbstractString)
+```
 - See also: `Component`, `Servable`, `StyleComponent`, `style!`
 ```
 """
 abstract type AbstractComponent <: Servable end
 
-string(s::Vector{<:AbstractComponent}) = join(string(serv) for serv in s)
+string(s::Vector{<:AbstractComponent}) = join(string(serv) for serv in s)::String
 
 function in(name::String, v::Vector{<:AbstractComponent})
     pos = findfirst(c::AbstractComponent -> c.name == name, v)
-    ~(isnothing(pos))
+    ~(isnothing(pos))::Bool
 end
 
-function getindex(vec::Vector{<:AbstractComponent}, name::String)::AbstractComponent
+function getindex(vec::Vector{<:AbstractComponent}, name::AbstractString)::AbstractComponent
     f = findfirst(c::AbstractComponent -> c.name == name, vec)
     if ~(isnothing(f))
         return(vec[f])::AbstractComponent
@@ -355,7 +417,7 @@ function getindex(vec::Vector{<:AbstractComponent}, name::String)::AbstractCompo
     throw(KeyError(name))
 end
 
-function delete!(vec::Vector{<:AbstractComponent}, name::String)::Nothing
+function delete!(vec::Vector{<:AbstractComponent}, name::AbstractString)::Nothing
     f = findfirst(c::AbstractComponent -> c.name == name, vec)
     if ~(isnothing(f))
         deleteat!(vec, f)
@@ -419,7 +481,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
     name::String
     properties::Dict{Symbol, Any}
     tag::String
-    Component{T}(name::String, tag::String, properties::Dict{Symbol, Any}) where {T <: Any} = begin
+    Component{T}(name::AbstractString, tag::AbstractString, properties::Dict{Symbol, Any}) where {T <: Any} = begin
         propkeys = keys(properties)
         if ~(:text in propkeys)
             push!(properties, :text => "")
@@ -430,7 +492,7 @@ mutable struct Component{T <: Any} <: AbstractComponent
         if ~(:extras in propkeys)
             push!(properties, :extras => Vector{AbstractComponent}())
         end
-        new{T}(name, properties, tag)
+        new{T}(string(name), properties, string(tag))
     end
     function Component{T}(name::String = "-", properties::Pair{<:Any, <:Any} ...; tag::String = string(T), args ...) where {T <: Any}
         properties::Dict{Symbol, Any} = Dict{Symbol, Any}([Symbol(prop[1]) => prop[2] for prop in properties])
@@ -487,7 +549,7 @@ function copy(c::Component{<:Any})
     props = copy(c.properties)
     comp = Component{Symbol(c.tag)}(c.name, tag = c.tag)
     comp.properties = props
-    return(comp)
+    return(comp)::Component{<:Any}
 end
 
 """
