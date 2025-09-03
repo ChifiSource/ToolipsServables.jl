@@ -316,7 +316,7 @@ function write!(io::String, servables::Servable ...)
     io = io * join(string(serv) for serv in servables)
 end
 
-function getindex(vs::Vector{<:Servable}, n::String)
+function getindex(vs::Vector{<:Servable}, n::AbstractString)
     f = findfirst(c::Servable -> c.name == n, vs)
     if ~(isnothing(f))
         return(vs[f])::Servable
